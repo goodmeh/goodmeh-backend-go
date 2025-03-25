@@ -1,9 +1,23 @@
 package service
 
-type IPlaceService interface{}
+import (
+	"context"
+	"goodmeh/app/repository"
+)
 
-type PlaceService struct{}
+type IPlaceService interface {
+	GetRandomPlaces() ([]repository.Place, error)
+}
 
-func NewPlaceService() *PlaceService {
-	return &PlaceService{}
+type PlaceService struct {
+	ctx context.Context
+	q   *repository.Queries
+}
+
+func NewPlaceService(ctx context.Context, q *repository.Queries) *PlaceService {
+	return &PlaceService{ctx, q}
+}
+
+func (p *PlaceService) GetRandomPlaces() ([]repository.Place, error) {
+	return p.q.GetRandomPlaces(p.ctx, 10)
 }
