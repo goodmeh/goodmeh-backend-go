@@ -12,14 +12,13 @@ Backend service for the GoodMeh? application built with Go.
 
 1. Clone the repository
 2. Download and install Go from https://golang.org/dl/
-3. Set up your environment variables in a `.env` file:
+3. Download Wire:
+    ```bash
+    go install github.com/google/wire/cmd/wire@latest
+    ```
+4. Set up your environment variables in a `.env` file:
    ```bash
    cp .env.example .env
-   ```
-4. Generate Wire dependencies:
-   ```bash
-   go install github.com/google/wire/cmd/wire@latest
-   wire ./deps
    ```
 5. Run `go mod download` to download all dependencies
 
@@ -60,6 +59,7 @@ go build -o goodmeh-app
   ```bash
   wire ./deps
   ```
+  Ensure that `$GOPATH/bin` is added to your `$PATH`.
 
 - **Testing**: Run tests (TODO: Add tests):
   ```bash
