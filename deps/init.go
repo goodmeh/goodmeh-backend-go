@@ -1,4 +1,4 @@
-package config
+package deps
 
 import "goodmeh/app/controller"
 

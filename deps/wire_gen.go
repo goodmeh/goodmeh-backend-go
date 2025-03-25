@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package config
+package deps
 
 import (
 	"github.com/google/wire"

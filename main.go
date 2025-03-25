@@ -2,7 +2,7 @@ package main
 
 import (
 	"goodmeh/app/router"
-	"goodmeh/config"
+	"goodmeh/deps"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -10,13 +10,13 @@ import (
 
 func init() {
 	godotenv.Load()
-	// config.InitLog()
+	// deps.InitLog()
 }
 
 func main() {
 	port := os.Getenv("PORT")
 
-	init := config.Initialize()
+	init := deps.Initialize()
 	app := router.Init(init)
 
 	app.Run(":" + port)
