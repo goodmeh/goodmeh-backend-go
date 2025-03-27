@@ -13,14 +13,18 @@ Backend service for the GoodMeh? application built with Go.
 1. Clone the repository
 2. Download and install Go from https://golang.org/dl/
 3. Download Wire:
-    ```bash
-    go install github.com/google/wire/cmd/wire@latest
-    ```
-4. Set up your environment variables in a `.env` file:
+  ```bash
+  go install github.com/google/wire/cmd/wire@latest
+  ```
+4. Download Goose:
+  ```bash
+  go install github.com/pressly/goose/v3/cmd/goose@latest
+  ```
+5. Set up your environment variables in a `.env` file:
    ```bash
    cp .env.example .env
    ```
-5. Run `go mod download` to download all dependencies
+6. Run `go mod download` to download all dependencies
 
 ## Running the Application
 
@@ -45,6 +49,7 @@ go build -o goodmeh-app
   /mapper      - Data mapping layer
   /router      - API routes configuration
   /service     - Business logic layer
+/db            - Database migration files and queries for sqlc
 /deps          - Dependency injection setup (Wire)
 ```
 
@@ -61,6 +66,15 @@ go build -o goodmeh-app
   ```
   Ensure that `$GOPATH/bin` is added to your `$PATH`.
 
+- **Database Migrations**: Run migrations using Goose:
+  ```bash
+  goose up
+  ```
+  To create a new migration:
+  ```bash
+  goose -s create <migration_name> sql
+  ```
+
 - **Testing**: Run tests (TODO: Add tests):
   ```bash
   go test ./...
@@ -72,3 +86,4 @@ go build -o goodmeh-app
 - **Database**: PostgreSQL with pgx driver
 - **SQL Tools**: sqlc for type-safe SQL
 - **Dependency Injection**: Google Wire
+- **Migration Tool**: Goose

@@ -8,6 +8,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Field struct {
+	ID         int32
+	Name       string
+	CategoryID int32
+}
+
+type FieldCategory struct {
+	ID   int32
+	Name string
+}
+
 type Place struct {
 	ID                 string
 	Name               string
@@ -24,4 +35,50 @@ type Place struct {
 	EarliestReviewDate pgtype.Timestamp
 	Lat                pgtype.Float8
 	Lng                pgtype.Float8
+}
+
+type PlaceField struct {
+	PlaceID string
+	FieldID int32
+}
+
+type PlaceKeyword struct {
+	PlaceID string
+	Keyword string
+	Count   int32
+}
+
+type Review struct {
+	ID              string
+	UserID          string
+	Rating          int32
+	Text            string
+	CreatedAt       pgtype.Timestamp
+	Weight          int32
+	PlaceID         string
+	PriceRange      pgtype.Int4
+	Summary         pgtype.Text
+	BusinessSummary pgtype.Text
+}
+
+type ReviewImage struct {
+	ReviewID string
+	ImageUrl string
+}
+
+type ReviewReply struct {
+	ReviewID  string
+	Text      string
+	CreatedAt pgtype.Timestamp
+}
+
+type User struct {
+	ID           string
+	Name         string
+	PhotoUri     pgtype.Text
+	ReviewCount  int32
+	PhotoCount   int32
+	RatingCount  int32
+	IsLocalGuide bool
+	Score        int32
 }
