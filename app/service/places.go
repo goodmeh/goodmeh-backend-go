@@ -8,6 +8,7 @@ import (
 type IPlaceService interface {
 	GetRandomPlaces() ([]repository.Place, error)
 	GetPlaceReviews(placeId string, page, perPage int) ([]repository.Review, error)
+	GetPlaceImages(placeId string, page, perPage int) ([]string, error)
 }
 
 type PlaceService struct {
@@ -27,6 +28,16 @@ func (p *PlaceService) GetPlaceReviews(placeId string, page, perPage int) ([]rep
 	limit := int32(perPage)
 	offset := int32(page * perPage)
 	return p.q.GetPlaceReviews(p.ctx, repository.GetPlaceReviewsParams{
+		PlaceID: placeId,
+		Limit:   limit,
+		Offset:  offset,
+	})
+}
+
+func (p *PlaceService) GetPlaceImages(placeId string, page, perPage int) ([]string, error) {
+	limit := int32(perPage)
+	offset := int32(page * perPage)
+	return p.q.GetPlaceImageUrls(p.ctx, repository.GetPlaceImageUrlsParams{
 		PlaceID: placeId,
 		Limit:   limit,
 		Offset:  offset,

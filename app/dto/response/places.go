@@ -19,3 +19,8 @@ type GetPlaceReviewsResponseDto struct {
 	Data    []repository.Review `json:"data"`
 	HasNext bool                `json:"has_next"`
 }
+
+type GetPlaceImagesResponseDto struct {
+	Data    []string `json:"data"`
+	HasNext bool     `json:"has_next"`
+}

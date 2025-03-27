@@ -9,6 +9,41 @@ import (
 	"context"
 )
 
+const getPlaceImageUrls = `-- name: GetPlaceImageUrls :many
+SELECT review_image.image_url
+FROM review_image
+    INNER JOIN review ON review_image.review_id = review.review_id
+WHERE review.place_id = $1
+ORDER BY review.created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetPlaceImageUrlsParams struct {
+	PlaceID string `json:"place_id"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) GetPlaceImageUrls(ctx context.Context, arg GetPlaceImageUrlsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getPlaceImageUrls, arg.PlaceID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var image_url string
+		if err := rows.Scan(&image_url); err != nil {
+			return nil, err
+		}
+		items = append(items, image_url)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPlaceReviews = `-- name: GetPlaceReviews :many
 SELECT id, user_id, rating, text, created_at, weight, place_id, price_range, summary, business_summary
 FROM review

@@ -64,13 +64,42 @@ func (p *PlacesController) GetPlaceReviews(c *gin.Context) {
 		Data:    reviewsModel,
 		HasNext: len(reviewsModel) == perPage,
 	})
+}
 
+func (p *PlacesController) GetPlaceImages(c *gin.Context) {
+	id := c.Param("id")
+	page, err := strconv.Atoi(c.DefaultQuery("page", "0"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid page",
+		})
+		return
+	}
+	perPage, err := strconv.Atoi(c.DefaultQuery("per_page", "20"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid per_page",
+		})
+		return
+	}
+	imageUrls, err := p.placeService.GetPlaceImages(id, page, perPage)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, response.GetPlaceImagesResponseDto{
+		Data:    imageUrls,
+		HasNext: len(imageUrls) == perPage,
+	})
 }
 
 func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g := r.Group("/v1/places")
 	g.GET("/:id", p.GetPlace)
 	g.GET("/:id/reviews", p.GetPlaceReviews)
+	g.GET("/:id/images", p.GetPlaceImages)
 	g.GET("/discover", p.GetRandomPlaces)
 }
 
