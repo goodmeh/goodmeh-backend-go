@@ -15,7 +15,8 @@ type IPlacesController interface {
 }
 
 type PlacesController struct {
-	placeService service.IPlaceService
+	placeService  service.IPlaceService
+	reviewService service.IReviewService
 }
 
 func (p *PlacesController) GetPlace(c *gin.Context) {
@@ -60,8 +61,19 @@ func (p *PlacesController) GetPlaceReviews(c *gin.Context) {
 		})
 		return
 	}
+	reviewIds := make([]string, len(reviewsModel))
+	for i, review := range reviewsModel {
+		reviewIds[i] = review.ID
+	}
+	imageUrls, err := p.reviewService.GetReviewsImages(reviewIds)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	c.JSON(http.StatusOK, response.GetPlaceReviewsResponseDto{
-		Data:    reviewsModel,
+		Data:    mapper.ToReviewResponseDto(reviewsModel, imageUrls, perPage),
 		HasNext: len(reviewsModel) == perPage,
 	})
 }
@@ -103,6 +115,6 @@ func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g.GET("/discover", p.GetRandomPlaces)
 }
 
-func NewPlacesController(placeService service.IPlaceService) *PlacesController {
-	return &PlacesController{placeService}
+func NewPlacesController(placeService service.IPlaceService, reviewService service.IReviewService) *PlacesController {
+	return &PlacesController{placeService, reviewService}
 }

@@ -7,6 +7,8 @@ package repository
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getPlaceImageUrls = `-- name: GetPlaceImageUrls :many
@@ -45,10 +47,14 @@ func (q *Queries) GetPlaceImageUrls(ctx context.Context, arg GetPlaceImageUrlsPa
 }
 
 const getPlaceReviews = `-- name: GetPlaceReviews :many
-SELECT id, user_id, rating, text, created_at, weight, place_id, price_range, summary, business_summary
-FROM review
+SELECT r.id, r.user_id, r.rating, r.text, r.created_at, r.weight, r.place_id, r.price_range, r.summary, r.business_summary,
+    row_to_json(u.*) AS "user",
+    row_to_json(rr.*) AS reply
+FROM review r
+    INNER JOIN "user" u ON r.user_id = u.id
+    LEFT JOIN review_reply rr ON r.id = rr.review_id
 WHERE place_id = $1
-ORDER BY created_at DESC
+ORDER BY r.created_at DESC
 LIMIT $2 OFFSET $3
 `
 
@@ -58,15 +64,30 @@ type GetPlaceReviewsParams struct {
 	Offset  int32  `json:"offset"`
 }
 
-func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams) ([]Review, error) {
+type GetPlaceReviewsRow struct {
+	ID              string           `json:"id"`
+	UserID          string           `json:"user_id"`
+	Rating          int32            `json:"rating"`
+	Text            string           `json:"text"`
+	CreatedAt       pgtype.Timestamp `json:"created_at"`
+	Weight          int32            `json:"weight"`
+	PlaceID         string           `json:"place_id"`
+	PriceRange      pgtype.Int4      `json:"price_range"`
+	Summary         pgtype.Text      `json:"summary"`
+	BusinessSummary pgtype.Text      `json:"business_summary"`
+	User            []byte           `json:"user"`
+	Reply           []byte           `json:"reply"`
+}
+
+func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams) ([]GetPlaceReviewsRow, error) {
 	rows, err := q.db.Query(ctx, getPlaceReviews, arg.PlaceID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Review
+	var items []GetPlaceReviewsRow
 	for rows.Next() {
-		var i Review
+		var i GetPlaceReviewsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -78,6 +99,8 @@ func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams
 			&i.PriceRange,
 			&i.Summary,
 			&i.BusinessSummary,
+			&i.User,
+			&i.Reply,
 		); err != nil {
 			return nil, err
 		}
@@ -122,6 +145,40 @@ func (q *Queries) GetRandomPlaces(ctx context.Context, limit int32) ([]Place, er
 			&i.Lat,
 			&i.Lng,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getReviewImageUrls = `-- name: GetReviewImageUrls :many
+SELECT review_image.review_id,
+    JSON_AGG(review_image.image_url) AS image_urls
+FROM review_image
+WHERE review_id = ANY($1::text [])
+GROUP BY review_image.review_id
+ORDER BY review_image.review_id
+`
+
+type GetReviewImageUrlsRow struct {
+	ReviewID  string `json:"review_id"`
+	ImageUrls []byte `json:"image_urls"`
+}
+
+func (q *Queries) GetReviewImageUrls(ctx context.Context, reviewIds []string) ([]GetReviewImageUrlsRow, error) {
+	rows, err := q.db.Query(ctx, getReviewImageUrls, reviewIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReviewImageUrlsRow
+	for rows.Next() {
+		var i GetReviewImageUrlsRow
+		if err := rows.Scan(&i.ReviewID, &i.ImageUrls); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

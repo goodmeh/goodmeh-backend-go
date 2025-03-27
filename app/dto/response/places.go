@@ -15,8 +15,15 @@ type PlacePreviewResponseDto struct {
 	PrimaryType     string     `json:"primary_type"`
 }
 
+type ReviewResponseDto struct {
+	repository.GetPlaceReviewsRow
+	User      repository.User         `json:"user"`
+	Reply     *repository.ReviewReply `json:"reply"`
+	ImageUrls []string                `json:"image_urls"`
+}
+
 type GetPlaceReviewsResponseDto struct {
-	Data    []repository.Review `json:"data"`
+	Data    []ReviewResponseDto `json:"data"`
 	HasNext bool                `json:"has_next"`
 }
 

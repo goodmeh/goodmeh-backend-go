@@ -24,6 +24,9 @@ var repositorySet = wire.NewSet(
 var placeServiceSet = wire.NewSet(service.NewPlaceService,
 	wire.Bind(new(service.IPlaceService), new(*service.PlaceService)))
 
+var reviewServiceSet = wire.NewSet(service.NewReviewService,
+	wire.Bind(new(service.IReviewService), new(*service.ReviewService)))
+
 var healthControllerSet = wire.NewSet(controller.NewHealthController,
 	wire.Bind(new(controller.IHealthController), new(*controller.HealthController)))
 
@@ -31,6 +34,13 @@ var placesControllerSet = wire.NewSet(controller.NewPlacesController,
 	wire.Bind(new(controller.IPlacesController), new(*controller.PlacesController)))
 
 func Initialize(db *pgx.Conn, ctx context.Context) *Initialization {
-	wire.Build(NewInitialization, healthControllerSet, placesControllerSet, placeServiceSet, repositorySet)
+	wire.Build(
+		NewInitialization,
+		healthControllerSet,
+		placesControllerSet,
+		placeServiceSet,
+		reviewServiceSet,
+		repositorySet,
+	)
 	return nil
 }

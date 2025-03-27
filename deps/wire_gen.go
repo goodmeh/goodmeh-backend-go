@@ -21,7 +21,8 @@ func Initialize(db *pgx.Conn, ctx context.Context) *Initialization {
 	healthController := controller.NewHealthController()
 	queries := ProvideQueries(db)
 	placeService := service.NewPlaceService(ctx, queries)
-	placesController := controller.NewPlacesController(placeService)
+	reviewService := service.NewReviewService(ctx, queries)
+	placesController := controller.NewPlacesController(placeService, reviewService)
 	initialization := NewInitialization(healthController, placesController)
 	return initialization
 }
@@ -37,6 +38,8 @@ var repositorySet = wire.NewSet(
 )
 
 var placeServiceSet = wire.NewSet(service.NewPlaceService, wire.Bind(new(service.IPlaceService), new(*service.PlaceService)))
+
+var reviewServiceSet = wire.NewSet(service.NewReviewService, wire.Bind(new(service.IReviewService), new(*service.ReviewService)))
 
 var healthControllerSet = wire.NewSet(controller.NewHealthController, wire.Bind(new(controller.IHealthController), new(*controller.HealthController)))
 
