@@ -1,6 +1,9 @@
 package response
 
-import "time"
+import (
+	"goodmeh/app/repository"
+	"time"
+)
 
 type PlacePreviewResponseDto struct {
 	ID              string     `json:"id"`
@@ -10,4 +13,9 @@ type PlacePreviewResponseDto struct {
 	LastScraped     *time.Time `json:"last_scraped"`
 	ImageUrl        string     `json:"image_url"`
 	PrimaryType     string     `json:"primary_type"`
+}
+
+type GetPlaceReviewsResponseDto struct {
+	Data    []repository.Review `json:"data"`
+	HasNext bool                `json:"has_next"`
 }

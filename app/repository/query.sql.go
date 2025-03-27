@@ -9,8 +9,56 @@ import (
 	"context"
 )
 
+const getPlaceReviews = `-- name: GetPlaceReviews :many
+SELECT id, user_id, rating, text, created_at, weight, place_id, price_range, summary, business_summary
+FROM review
+WHERE place_id = $1
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type GetPlaceReviewsParams struct {
+	PlaceID string `json:"place_id"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams) ([]Review, error) {
+	rows, err := q.db.Query(ctx, getPlaceReviews, arg.PlaceID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Review
+	for rows.Next() {
+		var i Review
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Rating,
+			&i.Text,
+			&i.CreatedAt,
+			&i.Weight,
+			&i.PlaceID,
+			&i.PriceRange,
+			&i.Summary,
+			&i.BusinessSummary,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRandomPlaces = `-- name: GetRandomPlaces :many
-SELECT id, name, rating, weighted_rating, user_rating_count, summary, last_scraped, image_url, recompute_stats, primary_type, business_summary, price_range, earliest_review_date, lat, lng FROM place ORDER BY RANDOM() LIMIT $1
+SELECT id, name, rating, weighted_rating, user_rating_count, summary, last_scraped, image_url, recompute_stats, primary_type, business_summary, price_range, earliest_review_date, lat, lng
+FROM place
+ORDER BY RANDOM()
+LIMIT $1
 `
 
 func (q *Queries) GetRandomPlaces(ctx context.Context, limit int32) ([]Place, error) {
