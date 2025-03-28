@@ -8,6 +8,7 @@ import (
 type IPlaceService interface {
 	GetRandomPlaces() ([]repository.Place, error)
 	GetPlaceReviews(placeId string, page, perPage int) ([]repository.GetPlaceReviewsRow, error)
+	GetPlaceNames() (map[string]string, error)
 	GetPlaceImages(placeId string, page, perPage int) ([]string, error)
 }
 
@@ -42,4 +43,16 @@ func (p *PlaceService) GetPlaceImages(placeId string, page, perPage int) ([]stri
 		Limit:   limit,
 		Offset:  offset,
 	})
+}
+
+func (p *PlaceService) GetPlaceNames() (map[string]string, error) {
+	placeNames, err := p.q.GetPlaceNames(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	placeNamesMap := make(map[string]string)
+	for _, placeName := range placeNames {
+		placeNamesMap[placeName.ID] = placeName.Name
+	}
+	return placeNamesMap, nil
 }

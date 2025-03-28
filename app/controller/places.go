@@ -107,8 +107,20 @@ func (p *PlacesController) GetPlaceImages(c *gin.Context) {
 	})
 }
 
+func (p *PlacesController) GetPlaceNames(c *gin.Context) {
+	placeNames, err := p.placeService.GetPlaceNames()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, placeNames)
+}
+
 func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g := r.Group("/v1/places")
+	g.GET("/", p.GetPlaceNames)
 	g.GET("/:id", p.GetPlace)
 	g.GET("/:id/reviews", p.GetPlaceReviews)
 	g.GET("/:id/images", p.GetPlaceImages)

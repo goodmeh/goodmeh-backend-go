@@ -13,8 +13,7 @@ import (
 )
 
 const getFieldCategories = `-- name: GetFieldCategories :many
-SELECT id,
-    name
+SELECT id, name
 FROM field_category
 `
 
@@ -66,6 +65,37 @@ func (q *Queries) GetPlaceImageUrls(ctx context.Context, arg GetPlaceImageUrlsPa
 			return nil, err
 		}
 		items = append(items, image_url)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPlaceNames = `-- name: GetPlaceNames :many
+SELECT place.id,
+    place.name
+FROM place
+`
+
+type GetPlaceNamesRow struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) GetPlaceNames(ctx context.Context) ([]GetPlaceNamesRow, error) {
+	rows, err := q.db.Query(ctx, getPlaceNames)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPlaceNamesRow
+	for rows.Next() {
+		var i GetPlaceNamesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
