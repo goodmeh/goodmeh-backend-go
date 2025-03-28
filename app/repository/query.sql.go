@@ -12,6 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getFieldCategories = `-- name: GetFieldCategories :many
+SELECT id,
+    name
+FROM field_category
+`
+
+func (q *Queries) GetFieldCategories(ctx context.Context) ([]FieldCategory, error) {
+	rows, err := q.db.Query(ctx, getFieldCategories)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FieldCategory
+	for rows.Next() {
+		var i FieldCategory
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPlaceImageUrls = `-- name: GetPlaceImageUrls :many
 SELECT review_image.image_url
 FROM review_image
@@ -188,4 +214,19 @@ func (q *Queries) GetReviewImageUrls(ctx context.Context, reviewIds []string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const insertField = `-- name: InsertField :exec
+INSERT INTO field (name, category_id)
+VALUES ($1, $2) ON CONFLICT (name, category_id) DO NOTHING
+`
+
+type InsertFieldParams struct {
+	Name       string `json:"name"`
+	CategoryID int32  `json:"category_id"`
+}
+
+func (q *Queries) InsertField(ctx context.Context, arg InsertFieldParams) error {
+	_, err := q.db.Exec(ctx, insertField, arg.Name, arg.CategoryID)
+	return err
 }

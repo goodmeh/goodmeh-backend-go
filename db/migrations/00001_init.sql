@@ -24,7 +24,8 @@ CREATE TABLE field_category (
 CREATE TABLE field (
 	id SERIAL PRIMARY KEY,
 	name VARCHAR(64) NOT NULL,
-	category_id INTEGER NOT NULL REFERENCES field_category (id)
+	category_id INTEGER NOT NULL REFERENCES field_category (id),
+	UNIQUE (name, category_id)
 );
 CREATE TABLE place_field (
 	place_id VARCHAR(64) NOT NULL REFERENCES place (id),
