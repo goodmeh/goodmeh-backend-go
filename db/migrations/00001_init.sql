@@ -7,13 +7,13 @@ CREATE TABLE place (
 	weighted_rating FLOAT DEFAULT 0 NOT NULL,
 	user_rating_count INT DEFAULT 0 NOT NULL,
 	summary VARCHAR(4096),
-	last_scraped TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	last_scraped TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	image_url VARCHAR(1024),
 	recompute_stats BOOLEAN DEFAULT FALSE NOT NULL,
 	primary_type VARCHAR(64),
 	business_summary VARCHAR(4096),
 	price_range INT,
-	earliest_review_date TIMESTAMP,
+	earliest_review_date TIMESTAMPTZ,
 	lat FLOAT,
 	lng FLOAT
 );
@@ -52,7 +52,7 @@ CREATE TABLE review (
 	user_id VARCHAR(64) NOT NULL REFERENCES "user" (id),
 	rating INTEGER NOT NULL,
 	text VARCHAR(4096) NOT NULL,
-	created_at TIMESTAMP NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL,
 	weight INTEGER NOT NULL,
 	place_id VARCHAR(64) NOT NULL REFERENCES place (id),
 	price_range INTEGER,
@@ -75,7 +75,7 @@ CREATE TABLE review_image (
 CREATE TABLE review_reply (
 	review_id VARCHAR(64) NOT NULL PRIMARY KEY REFERENCES review (id),
 	text VARCHAR(4096) NOT NULL,
-	created_at TIMESTAMP NOT NULL
+	created_at TIMESTAMPTZ NOT NULL
 );
 -- +goose StatementEnd
 -- +goose Down

@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -65,18 +66,18 @@ type GetPlaceReviewsParams struct {
 }
 
 type GetPlaceReviewsRow struct {
-	ID              string           `json:"id"`
-	UserID          string           `json:"user_id"`
-	Rating          int32            `json:"rating"`
-	Text            string           `json:"text"`
-	CreatedAt       pgtype.Timestamp `json:"created_at"`
-	Weight          int32            `json:"weight"`
-	PlaceID         string           `json:"place_id"`
-	PriceRange      pgtype.Int4      `json:"price_range"`
-	Summary         pgtype.Text      `json:"summary"`
-	BusinessSummary pgtype.Text      `json:"business_summary"`
-	User            []byte           `json:"user"`
-	Reply           []byte           `json:"reply"`
+	ID              string      `json:"id"`
+	UserID          string      `json:"user_id"`
+	Rating          int32       `json:"rating"`
+	Text            string      `json:"text"`
+	CreatedAt       time.Time   `json:"created_at"`
+	Weight          int32       `json:"weight"`
+	PlaceID         string      `json:"place_id"`
+	PriceRange      pgtype.Int4 `json:"price_range"`
+	Summary         pgtype.Text `json:"summary"`
+	BusinessSummary pgtype.Text `json:"business_summary"`
+	User            []byte      `json:"user"`
+	Reply           []byte      `json:"reply"`
 }
 
 func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams) ([]GetPlaceReviewsRow, error) {
