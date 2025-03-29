@@ -49,10 +49,14 @@ go build -o goodmeh-app
 /app
   /controller  - HTTP request handlers
   /dto         - Data Transfer Objects for API responses
+  /events      - Event Bus and event handlers
   /repository  - Database access layer. This is where sqlc generated files are stored
   /mapper      - Data mapping layer
   /router      - API routes configuration
   /service     - Business logic layer
+  /socket      - WebSocket handling
+  /summarizer  - OpenAI summarization service
+  /utils       - Utility functions
 /db            - Database migration files and queries for sqlc
 /deps          - Dependency injection setup (Wire)
 ```
