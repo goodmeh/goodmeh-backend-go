@@ -13,11 +13,12 @@ import (
 	"goodmeh/app/controller"
 	"goodmeh/app/repository"
 	"goodmeh/app/service"
+	"goodmeh/app/socket"
 )
 
 // Injectors from injector.go:
 
-func Initialize(db *pgx.Conn, ctx context.Context) *Initialization {
+func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) *Initialization {
 	healthController := controller.NewHealthController()
 	queries := ProvideQueries(db)
 	placeService := service.NewPlaceService(ctx, queries)
