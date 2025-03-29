@@ -6,6 +6,7 @@ package deps
 import (
 	"context"
 	"goodmeh/app/controller"
+	"goodmeh/app/events"
 	"goodmeh/app/repository"
 	"goodmeh/app/service"
 	"goodmeh/app/socket"
@@ -17,6 +18,10 @@ import (
 func ProvideQueries(db *pgx.Conn) *repository.Queries {
 	return repository.New(db)
 }
+
+var eventBusSet = wire.NewSet(
+	events.NewEventBus,
+)
 
 var repositorySet = wire.NewSet(
 	ProvideQueries,
@@ -42,6 +47,7 @@ func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) 
 		placeServiceSet,
 		reviewServiceSet,
 		repositorySet,
+		eventBusSet,
 	)
 	return nil
 }

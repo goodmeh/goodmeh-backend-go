@@ -31,7 +31,7 @@ func main() {
 	socketServer := socket.NewServer()
 
 	init := deps.Initialize(conn, ctx, &socketServer)
-	app := router.Init(init, ctx, &socketServer)
+	app := router.Init(init, ctx)
 
 	app.Run(":" + port)
 }

@@ -2,8 +2,11 @@ package controller
 
 import (
 	"goodmeh/app/dto/response"
+	"goodmeh/app/events"
 	"goodmeh/app/mapper"
+	"goodmeh/app/repository"
 	"goodmeh/app/service"
+	"goodmeh/app/socket"
 	"net/http"
 	"strconv"
 
@@ -17,6 +20,8 @@ type IPlacesController interface {
 type PlacesController struct {
 	placeService  service.IPlaceService
 	reviewService service.IReviewService
+	socketServer  *socket.Server
+	eventBus      *events.EventBus
 }
 
 func (p *PlacesController) GetPlace(c *gin.Context) {
@@ -118,6 +123,14 @@ func (p *PlacesController) GetPlaceNames(c *gin.Context) {
 	c.JSON(http.StatusOK, placeNames)
 }
 
+func (p *PlacesController) OnPlaceScrape(event events.Event) {
+	place, ok := event.Payload.(repository.Place)
+	if !ok {
+		return
+	}
+	p.socketServer.To(place.ID, place)
+}
+
 func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g := r.Group("/v1/places")
 	g.GET("/", p.GetPlaceNames)
@@ -125,8 +138,20 @@ func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g.GET("/:id/reviews", p.GetPlaceReviews)
 	g.GET("/:id/images", p.GetPlaceImages)
 	g.GET("/discover", p.GetRandomPlaces)
+
+	p.eventBus.Subscribe(events.ON_PLACE_SCRAPE, p.OnPlaceScrape)
 }
 
-func NewPlacesController(placeService service.IPlaceService, reviewService service.IReviewService) *PlacesController {
-	return &PlacesController{placeService, reviewService}
+func NewPlacesController(
+	placeService service.IPlaceService,
+	reviewService service.IReviewService,
+	socketServer *socket.Server,
+	eventBus *events.EventBus,
+) *PlacesController {
+	return &PlacesController{
+		placeService,
+		reviewService,
+		socketServer,
+		eventBus,
+	}
 }

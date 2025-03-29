@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"goodmeh/app/events"
 	"goodmeh/app/repository"
 )
 
@@ -13,12 +14,13 @@ type IPlaceService interface {
 }
 
 type PlaceService struct {
-	ctx context.Context
-	q   *repository.Queries
+	ctx      context.Context
+	q        *repository.Queries
+	eventBus *events.EventBus
 }
 
-func NewPlaceService(ctx context.Context, q *repository.Queries) *PlaceService {
-	return &PlaceService{ctx, q}
+func NewPlaceService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *PlaceService {
+	return &PlaceService{ctx, q, eventBus}
 }
 
 func (p *PlaceService) GetRandomPlaces() ([]repository.Place, error) {

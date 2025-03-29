@@ -11,6 +11,7 @@ import (
 	"github.com/google/wire"
 	"github.com/jackc/pgx/v5"
 	"goodmeh/app/controller"
+	"goodmeh/app/events"
 	"goodmeh/app/repository"
 	"goodmeh/app/service"
 	"goodmeh/app/socket"
@@ -21,10 +22,11 @@ import (
 func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) *Initialization {
 	healthController := controller.NewHealthController()
 	queries := ProvideQueries(db)
-	placeService := service.NewPlaceService(ctx, queries)
+	eventBus := events.NewEventBus()
+	placeService := service.NewPlaceService(ctx, queries, eventBus)
 	reviewService := service.NewReviewService(ctx, queries)
-	placesController := controller.NewPlacesController(placeService, reviewService)
-	initialization := NewInitialization(healthController, placesController)
+	placesController := controller.NewPlacesController(placeService, reviewService, socketServer, eventBus)
+	initialization := NewInitialization(healthController, placesController, socketServer)
 	return initialization
 }
 
@@ -33,6 +35,8 @@ func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) 
 func ProvideQueries(db *pgx.Conn) *repository.Queries {
 	return repository.New(db)
 }
+
+var eventBusSet = wire.NewSet(events.NewEventBus)
 
 var repositorySet = wire.NewSet(
 	ProvideQueries,
