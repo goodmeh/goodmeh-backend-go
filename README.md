@@ -12,19 +12,23 @@ Backend service for the GoodMeh? application built with Go.
 
 1. Clone the repository
 2. Download and install Go from https://golang.org/dl/
-3. Download Wire:
+3. Set the `GOPRIVATE` environment variable for private module:
+  ```bash
+  export GOPRIVATE=github.com/goodmeh/backend-private
+  ```
+4. Download Wire:
   ```bash
   go install github.com/google/wire/cmd/wire@latest
   ```
-4. Download Goose:
+5. Download Goose:
   ```bash
   go install github.com/pressly/goose/v3/cmd/goose@latest
   ```
-5. Set up your environment variables in a `.env` file:
-   ```bash
-   cp .env.example .env
-   ```
-6. Run `go mod download` to download all dependencies
+6. Set up your environment variables in a `.env` file:
+  ```bash
+  cp .env.example .env
+  ```
+7. Run `go mod download` to download all dependencies
 
 ## Running the Application
 
