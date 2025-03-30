@@ -31,6 +31,19 @@ func NewPlaceService(ctx context.Context, q *repository.Queries, eventBus *event
 	return &PlaceService{ctx, q, eventBus}
 }
 
+func (p *PlaceService) WithTx() (
+	*PlaceService,
+	repository.RollbackFunc,
+	repository.CommitFunc,
+	error,
+) {
+	tx, rollback, commit, err := p.q.Begin(p.ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return &PlaceService{p.ctx, tx, p.eventBus}, rollback, commit, nil
+}
+
 func (p *PlaceService) GetRandomPlaces() ([]repository.Place, error) {
 	return p.q.GetRandomPlaces(p.ctx, 10)
 }
@@ -119,6 +132,12 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	log.Printf("Scraped place %s", placeId)
 	p.eventBus.Publish(events.ON_PLACE_SCRAPE, place.Place)
 	log.Printf("Inserting place %s", placeId)
+	p, rollback, commit, err := p.WithTx()
+	defer rollback(p.ctx)
+	if err != nil {
+		log.Printf("failed to start transaction: %v", err)
+		return
+	}
 	err = p.InsertPlace(place)
 	if err != nil {
 		log.Printf("failed to insert place: %v", err)
@@ -131,6 +150,7 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		return
 	}
 	p.eventBus.Publish(events.ON_REVIEWS_READY, reviewsChan)
+	commit(p.ctx)
 }
 
 func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {

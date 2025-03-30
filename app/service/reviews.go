@@ -7,6 +7,7 @@ import (
 	"goodmeh/app/repository"
 	"log"
 	"slices"
+	"sync"
 
 	"github.com/goodmeh/backend-private/collector"
 )
@@ -19,6 +20,19 @@ type ReviewService struct {
 	ctx      context.Context
 	q        *repository.Queries
 	eventBus *events.EventBus
+}
+
+func (p *ReviewService) WithTx() (
+	*ReviewService,
+	repository.RollbackFunc,
+	repository.CommitFunc,
+	error,
+) {
+	tx, rollback, commit, err := p.q.Begin(p.ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return &ReviewService{p.ctx, tx, p.eventBus}, rollback, commit, nil
 }
 
 func (r *ReviewService) GetReviewsImages(reviewIds []string) ([][]string, error) {
@@ -44,7 +58,12 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 		if len(acc) == 0 {
 			return
 		}
-		log.Printf("Inserting %d reviews", len(acc))
+		r, rollback, commit, err := r.WithTx()
+		if err != nil {
+			log.Printf("failed to begin transaction: %v", err)
+			return
+		}
+		defer rollback(r.ctx)
 		// Insert User
 		{
 			users := make([]repository.InsertUsersParams, len(acc))
@@ -59,7 +78,13 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 					IsLocalGuide: r.User.IsLocalGuide,
 				}
 			}
-			if _, err := r.q.InsertUsers(r.ctx, users); err != nil {
+			var err error
+			r.q.InsertUsers(r.ctx, users).Exec(func(i int, e error) {
+				if e != nil {
+					err = e
+				}
+			})
+			if err != nil {
 				log.Printf("failed to insert users: %v", err)
 				return
 			}
@@ -79,14 +104,23 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 					PriceRange: r.Review.PriceRange,
 				}
 			}
-			if _, err := r.q.InsertReviews(r.ctx, reviews); err != nil {
+			var err error
+			r.q.InsertReviews(r.ctx, reviews).Exec(func(i int, e error) {
+				if e != nil {
+					err = e
+				}
+			})
+			if err != nil {
 				log.Printf("failed to insert reviews: %v", err)
 				return
 			}
 		}
 
 		// Insert ReviewReply
-		{
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
 			reviewReplies := make([]repository.InsertReviewRepliesParams, 0, len(acc))
 			for _, r := range acc {
 				if r.Reply == nil {
@@ -98,14 +132,21 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 					CreatedAt: r.Reply.CreatedAt,
 				})
 			}
-			if _, err := r.q.InsertReviewReplies(r.ctx, reviewReplies); err != nil {
+			var err error
+			r.q.InsertReviewReplies(r.ctx, reviewReplies).Exec(func(i int, e error) {
+				if e != nil {
+					err = e
+				}
+			})
+			if err != nil {
 				log.Printf("failed to insert review replies: %v", err)
 				return
 			}
-		}
+		}()
 
 		// Insert ReviewImage
-		{
+		go func() {
+			defer wg.Done()
 			reviewImages := make([]repository.InsertReviewImagesParams, 0)
 			for _, r := range acc {
 				for _, imageUrl := range r.ImageUrls {
@@ -115,11 +156,24 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 					})
 				}
 			}
-			if _, err := r.q.InsertReviewImages(r.ctx, reviewImages); err != nil {
+			var err error
+			r.q.InsertReviewImages(r.ctx, reviewImages).Exec(func(i int, e error) {
+				if e != nil {
+					err = e
+				}
+			})
+			if err != nil {
 				log.Printf("failed to insert review images: %v", err)
 				return
 			}
+		}()
+		wg.Wait()
+		err = commit(r.ctx)
+		if err != nil {
+			log.Printf("failed to commit transaction: %v", err)
+			return
 		}
+		log.Printf("Inserted %d reviews", len(acc))
 	}
 	go func() {
 		var count uint32
