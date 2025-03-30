@@ -12,10 +12,9 @@ import (
 	"goodmeh/app/socket"
 
 	"github.com/google/wire"
-	"github.com/jackc/pgx/v5"
 )
 
-func ProvideQueries(db *pgx.Conn) *repository.Queries {
+func ProvideQueries(db repository.DBTX) *repository.Queries {
 	return repository.New(db)
 }
 
@@ -42,7 +41,7 @@ var healthControllerSet = wire.NewSet(controller.NewHealthController,
 var placesControllerSet = wire.NewSet(controller.NewPlacesController,
 	wire.Bind(new(controller.IPlacesController), new(*controller.PlacesController)))
 
-func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) *Initialization {
+func Initialize(db repository.DBTX, ctx context.Context, socketServer *socket.Server) *Initialization {
 	wire.Build(
 		NewInitialization,
 		healthControllerSet,

@@ -9,7 +9,6 @@ package deps
 import (
 	"context"
 	"github.com/google/wire"
-	"github.com/jackc/pgx/v5"
 	"goodmeh/app/controller"
 	"goodmeh/app/events"
 	"goodmeh/app/repository"
@@ -19,7 +18,7 @@ import (
 
 // Injectors from injector.go:
 
-func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) *Initialization {
+func Initialize(db repository.DBTX, ctx context.Context, socketServer *socket.Server) *Initialization {
 	queries := ProvideQueries(db)
 	eventBus := events.NewEventBus()
 	fieldService := service.NewFieldService(ctx, queries, eventBus)
@@ -33,7 +32,7 @@ func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) 
 
 // injector.go:
 
-func ProvideQueries(db *pgx.Conn) *repository.Queries {
+func ProvideQueries(db repository.DBTX) *repository.Queries {
 	return repository.New(db)
 }
 
