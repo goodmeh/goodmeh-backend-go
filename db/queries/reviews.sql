@@ -15,7 +15,7 @@ FROM review_image
 WHERE review_id = ANY(@review_ids::text [])
 GROUP BY review_image.review_id
 ORDER BY review_image.review_id;
--- name: InsertReviews :copyfrom
+-- name: InsertReviews :batchexec
 INSERT INTO review (
         id,
         user_id,
@@ -25,14 +25,27 @@ INSERT INTO review (
         place_id,
         price_range
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7);
--- name: InsertReviewReplies :copyfrom
+VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO
+UPDATE
+SET user_id = EXCLUDED.user_id,
+    rating = EXCLUDED.rating,
+    text = EXCLUDED.text,
+    created_at = EXCLUDED.created_at,
+    weight = EXCLUDED.weight,
+    place_id = EXCLUDED.place_id,
+    price_range = EXCLUDED.price_range,
+    summary = EXCLUDED.summary,
+    business_summary = EXCLUDED.business_summary;
+-- name: InsertReviewReplies :batchexec
 INSERT INTO review_reply (
         review_id,
         text,
         created_at
     )
-VALUES ($1, $2, $3);
--- name: InsertReviewImages :copyfrom
+VALUES ($1, $2, $3) ON CONFLICT (review_id) DO
+UPDATE
+SET text = EXCLUDED.text,
+    created_at = EXCLUDED.created_at;
+-- name: InsertReviewImages :batchexec
 INSERT INTO review_image (review_id, image_url)
-VALUES ($1, $2);
+VALUES ($1, $2) ON CONFLICT (review_id, image_url) DO NOTHING;

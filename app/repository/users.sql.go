@@ -4,14 +4,3 @@
 // source: users.sql
 
 package repository
-
-type InsertUsersParams struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	PhotoUri     *string `json:"photo_uri"`
-	ReviewCount  int32   `json:"review_count"`
-	PhotoCount   int32   `json:"photo_count"`
-	RatingCount  int32   `json:"rating_count"`
-	IsLocalGuide bool    `json:"is_local_guide"`
-	Score        int32   `json:"score"`
-}
