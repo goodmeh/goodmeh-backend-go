@@ -147,6 +147,62 @@ func (q *Queries) GetRandomPlaces(ctx context.Context, limit int32) ([]Place, er
 	return items, nil
 }
 
+const insertPlace = `-- name: InsertPlace :exec
+INSERT INTO place (
+        id,
+        name,
+        user_rating_count,
+        image_url,
+        recompute_stats,
+        primary_type,
+        lat,
+        lng
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) ON CONFLICT (id) DO
+UPDATE
+SET name = $2,
+    user_rating_count = $3,
+    image_url = $4,
+    recompute_stats = $5,
+    primary_type = $6,
+    lat = $7,
+    lng = $8
+`
+
+type InsertPlaceParams struct {
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	UserRatingCount int32    `json:"user_rating_count"`
+	ImageUrl        *string  `json:"image_url"`
+	RecomputeStats  bool     `json:"recompute_stats"`
+	PrimaryType     *string  `json:"primary_type"`
+	Lat             *float64 `json:"lat"`
+	Lng             *float64 `json:"lng"`
+}
+
+func (q *Queries) InsertPlace(ctx context.Context, arg InsertPlaceParams) error {
+	_, err := q.db.Exec(ctx, insertPlace,
+		arg.ID,
+		arg.Name,
+		arg.UserRatingCount,
+		arg.ImageUrl,
+		arg.RecomputeStats,
+		arg.PrimaryType,
+		arg.Lat,
+		arg.Lng,
+	)
+	return err
+}
+
 const insertPlaceField = `-- name: InsertPlaceField :exec
 INSERT INTO place_field (place_id, field_id)
 VALUES (

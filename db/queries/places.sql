@@ -29,3 +29,32 @@ FROM review_image
 WHERE review.place_id = $1
 ORDER BY review.created_at DESC
 LIMIT $2 OFFSET $3;
+-- name: InsertPlace :exec
+INSERT INTO place (
+        id,
+        name,
+        user_rating_count,
+        image_url,
+        recompute_stats,
+        primary_type,
+        lat,
+        lng
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) ON CONFLICT (id) DO
+UPDATE
+SET name = $2,
+    user_rating_count = $3,
+    image_url = $4,
+    recompute_stats = $5,
+    primary_type = $6,
+    lat = $7,
+    lng = $8;

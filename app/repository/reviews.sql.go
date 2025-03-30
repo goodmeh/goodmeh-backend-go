@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"time"
 )
 
 const getPlaceReviews = `-- name: GetPlaceReviews :many
@@ -107,4 +108,25 @@ func (q *Queries) GetReviewImageUrls(ctx context.Context, reviewIds []string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+type InsertReviewImagesParams struct {
+	ReviewID string `json:"review_id"`
+	ImageUrl string `json:"image_url"`
+}
+
+type InsertReviewRepliesParams struct {
+	ReviewID  string    `json:"review_id"`
+	Text      string    `json:"text"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type InsertReviewsParams struct {
+	ID         string    `json:"id"`
+	UserID     string    `json:"user_id"`
+	Rating     int32     `json:"rating"`
+	Text       string    `json:"text"`
+	CreatedAt  time.Time `json:"created_at"`
+	PlaceID    string    `json:"place_id"`
+	PriceRange *int32    `json:"price_range"`
 }

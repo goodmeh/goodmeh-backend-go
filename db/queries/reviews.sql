@@ -15,3 +15,24 @@ FROM review_image
 WHERE review_id = ANY(@review_ids::text [])
 GROUP BY review_image.review_id
 ORDER BY review_image.review_id;
+-- name: InsertReviews :copyfrom
+INSERT INTO review (
+        id,
+        user_id,
+        rating,
+        text,
+        created_at,
+        place_id,
+        price_range
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7);
+-- name: InsertReviewReplies :copyfrom
+INSERT INTO review_reply (
+        review_id,
+        text,
+        created_at
+    )
+VALUES ($1, $2, $3);
+-- name: InsertReviewImages :copyfrom
+INSERT INTO review_image (review_id, image_url)
+VALUES ($1, $2);

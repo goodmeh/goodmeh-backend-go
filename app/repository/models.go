@@ -26,7 +26,7 @@ type Place struct {
 	WeightedRating     float64    `json:"weighted_rating"`
 	UserRatingCount    int32      `json:"user_rating_count"`
 	Summary            *string    `json:"summary"`
-	LastScraped        time.Time  `json:"last_scraped"`
+	LastScraped        *time.Time `json:"last_scraped"`
 	ImageUrl           *string    `json:"image_url"`
 	RecomputeStats     bool       `json:"recompute_stats"`
 	PrimaryType        *string    `json:"primary_type"`
