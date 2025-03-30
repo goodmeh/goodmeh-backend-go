@@ -4,6 +4,7 @@ go 1.23.3
 
 require (
 	github.com/gin-gonic/gin v1.10.0
+	github.com/goodmeh/backend-private v0.0.0-20250330052234-451562e2f66b
 	github.com/google/wire v0.6.0
 	github.com/invopop/jsonschema v0.13.0
 	github.com/jackc/pgx/v5 v5.7.4
@@ -14,6 +15,9 @@ require (
 )
 
 require (
+	github.com/EDDYCJY/fake-useragent v0.2.0 // indirect
+	github.com/PuerkitoBio/goquery v1.10.2 // indirect
+	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/bytedance/sonic v1.12.4 // indirect
@@ -27,7 +31,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.23.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect

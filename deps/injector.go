@@ -33,6 +33,9 @@ var placeServiceSet = wire.NewSet(service.NewPlaceService,
 var reviewServiceSet = wire.NewSet(service.NewReviewService,
 	wire.Bind(new(service.IReviewService), new(*service.ReviewService)))
 
+var fieldServiceSet = wire.NewSet(service.NewFieldService,
+	wire.Bind(new(service.IFieldService), new(*service.FieldService)))
+
 var healthControllerSet = wire.NewSet(controller.NewHealthController,
 	wire.Bind(new(controller.IHealthController), new(*controller.HealthController)))
 
@@ -46,6 +49,7 @@ func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) 
 		placesControllerSet,
 		placeServiceSet,
 		reviewServiceSet,
+		fieldServiceSet,
 		repositorySet,
 		eventBusSet,
 	)

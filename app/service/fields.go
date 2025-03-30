@@ -2,39 +2,47 @@ package service
 
 import (
 	"context"
+	"goodmeh/app/events"
 	"goodmeh/app/repository"
+	"log"
 )
 
 type IFieldService interface {
-	InsertFields(fieldNames, categoryNames []string) error
+	InsertFields(fields [][2]string)
 }
 
 type FieldService struct {
-	ctx context.Context
-	q   *repository.Queries
+	ctx      context.Context
+	q        *repository.Queries
+	eventBus *events.EventBus
 }
 
-func NewFieldService(ctx context.Context, q *repository.Queries) *FieldService {
-	return &FieldService{ctx, q}
+func NewFieldService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *FieldService {
+	f := &FieldService{ctx, q, eventBus}
+	f.eventBus.Subscribe(events.INSERT_NEW_FIELDS, events.AssertHandler(f.InsertFields))
+	return f
 }
 
-func (f *FieldService) InsertFields(fieldNames, categoryNames []string) error {
+func (f *FieldService) InsertFields(fields [][2]string) {
 	categories, err := f.q.GetFieldCategories(f.ctx)
 	if err != nil {
-		return err
+		log.Printf("Error getting field categories: %v", err)
+		return
 	}
 	categoryMap := make(map[string]int32)
 	for _, category := range categories {
 		categoryMap[category.Name] = category.ID
 	}
-	for i, fieldName := range fieldNames {
+	for _, group := range fields {
+		categoryName := group[0]
+		fieldName := group[1]
 		err = f.q.InsertField(f.ctx, repository.InsertFieldParams{
 			Name:       fieldName,
-			CategoryID: categoryMap[categoryNames[i]],
+			CategoryID: categoryMap[categoryName],
 		})
 		if err != nil {
-			return err
+			log.Printf("Error inserting field %s: %v", fieldName, err)
+			return
 		}
 	}
-	return nil
 }

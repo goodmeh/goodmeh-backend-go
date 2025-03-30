@@ -20,11 +20,12 @@ import (
 // Injectors from injector.go:
 
 func Initialize(db *pgx.Conn, ctx context.Context, socketServer *socket.Server) *Initialization {
-	healthController := controller.NewHealthController()
 	queries := ProvideQueries(db)
 	eventBus := events.NewEventBus()
+	fieldService := service.NewFieldService(ctx, queries, eventBus)
+	healthController := controller.NewHealthController(fieldService)
 	placeService := service.NewPlaceService(ctx, queries, eventBus)
-	reviewService := service.NewReviewService(ctx, queries)
+	reviewService := service.NewReviewService(ctx, queries, eventBus)
 	placesController := controller.NewPlacesController(placeService, reviewService, socketServer, eventBus)
 	initialization := NewInitialization(healthController, placesController, socketServer)
 	return initialization
@@ -45,6 +46,8 @@ var repositorySet = wire.NewSet(
 var placeServiceSet = wire.NewSet(service.NewPlaceService, wire.Bind(new(service.IPlaceService), new(*service.PlaceService)))
 
 var reviewServiceSet = wire.NewSet(service.NewReviewService, wire.Bind(new(service.IReviewService), new(*service.ReviewService)))
+
+var fieldServiceSet = wire.NewSet(service.NewFieldService, wire.Bind(new(service.IFieldService), new(*service.FieldService)))
 
 var healthControllerSet = wire.NewSet(controller.NewHealthController, wire.Bind(new(controller.IHealthController), new(*controller.HealthController)))
 

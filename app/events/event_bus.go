@@ -3,11 +3,10 @@ package events
 type EventType int
 
 type Event struct {
-	Type    EventType
 	Payload any
 }
 
-type Subscriber func(Event)
+type Subscriber func(any)
 
 type EventBus struct {
 	subscribers map[EventType][]Subscriber
@@ -26,10 +25,20 @@ func (eb *EventBus) Subscribe(eventType EventType, subscriber Subscriber) {
 	eb.subscribers[eventType] = append(eb.subscribers[eventType], subscriber)
 }
 
-func (eb *EventBus) Publish(event Event) {
-	if subscribers, exists := eb.subscribers[event.Type]; exists {
+func (eb *EventBus) Publish(eventType EventType, payload any) {
+	if subscribers, exists := eb.subscribers[eventType]; exists {
 		for _, subscriber := range subscribers {
-			subscriber(event)
+			subscriber(payload)
+		}
+	}
+}
+
+func AssertHandler[T any](handler func(T)) func(any) {
+	return func(payload any) {
+		if p, ok := payload.(T); ok {
+			handler(p)
+		} else {
+			panic("Invalid payload type")
 		}
 	}
 }
