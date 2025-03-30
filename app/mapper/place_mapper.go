@@ -14,8 +14,8 @@ func ToPlacePreviewResponseDtos(places []repository.Place) []response.PlacePrevi
 			Rating:          place.Rating,
 			UserRatingCount: place.UserRatingCount,
 			LastScraped:     &place.LastScraped,
-			ImageUrl:        place.ImageUrl.String,
-			PrimaryType:     place.PrimaryType.String,
+			ImageUrl:        place.ImageUrl,
+			PrimaryType:     place.PrimaryType,
 		}
 	}
 	return placeDtos

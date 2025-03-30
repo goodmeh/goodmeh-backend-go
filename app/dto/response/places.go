@@ -11,8 +11,8 @@ type PlacePreviewResponseDto struct {
 	Rating          float64    `json:"rating"`
 	UserRatingCount int32      `json:"user_rating_count"`
 	LastScraped     *time.Time `json:"last_scraped"`
-	ImageUrl        string     `json:"image_url"`
-	PrimaryType     string     `json:"primary_type"`
+	ImageUrl        *string    `json:"image_url"`
+	PrimaryType     *string    `json:"primary_type"`
 }
 
 type ReviewResponseDto struct {

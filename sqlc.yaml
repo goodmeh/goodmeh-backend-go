@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    queries: "db/query.sql"
+    queries: "db/queries"
     schema: "db/migrations"
     gen:
       go:
@@ -9,6 +9,7 @@ sql:
         out: "app/repository"
         sql_package: "pgx/v5"
         emit_json_tags: true
+        emit_pointers_for_null_types: true
         overrides:
         - db_type: "timestamptz"
           go_type:
