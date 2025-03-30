@@ -16,7 +16,7 @@ type PlacePreviewResponseDto struct {
 }
 
 type ReviewResponseDto struct {
-	repository.GetPlaceReviewsRow
+	repository.Review
 	User      repository.User         `json:"user"`
 	Reply     *repository.ReviewReply `json:"reply"`
 	ImageUrls []string                `json:"image_urls"`

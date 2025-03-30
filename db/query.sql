@@ -4,9 +4,9 @@ FROM place
 ORDER BY RANDOM()
 LIMIT $1;
 -- name: GetPlaceReviews :many
-SELECT r.*,
-    row_to_json(u.*) AS "user",
-    row_to_json(rr.*) AS reply
+SELECT sqlc.embed(r),
+    sqlc.embed(u),
+    sqlc.embed(rr)
 FROM review r
     INNER JOIN "user" u ON r.user_id = u.id
     LEFT JOIN review_reply rr ON r.id = rr.review_id

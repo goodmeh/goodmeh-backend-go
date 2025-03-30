@@ -68,7 +68,7 @@ func (p *PlacesController) GetPlaceReviews(c *gin.Context) {
 	}
 	reviewIds := make([]string, len(reviewsModel))
 	for i, review := range reviewsModel {
-		reviewIds[i] = review.ID
+		reviewIds[i] = review.Review.ID
 	}
 	imageUrls, err := p.reviewService.GetReviewsImages(reviewIds)
 	if err != nil {
