@@ -53,14 +53,15 @@ func (r *ReviewService) GetReviewsImages(reviewIds []string) ([][]string, error)
 }
 
 func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
-	actualInsertion := func(acc []collector.ScrapedReview) {
+	actualInsertion := func(acc []collector.ScrapedReview) error {
+		var err error
 		if len(acc) == 0 {
-			return
+			return err
 		}
 		r, rollback, commit, err := r.WithTx()
 		if err != nil {
 			log.Printf("failed to begin transaction: %v", err)
-			return
+			return err
 		}
 		defer rollback(r.ctx)
 		// Insert User
@@ -77,7 +78,6 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					IsLocalGuide: r.User.IsLocalGuide,
 				}
 			}
-			var err error
 			r.q.InsertUsers(r.ctx, users).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
@@ -85,7 +85,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 			})
 			if err != nil {
 				log.Printf("failed to insert users: %v", err)
-				return
+				return err
 			}
 		}
 
@@ -103,7 +103,6 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					PriceRange: r.Review.PriceRange,
 				}
 			}
-			var err error
 			r.q.InsertReviews(r.ctx, reviews).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
@@ -111,7 +110,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 			})
 			if err != nil {
 				log.Printf("failed to insert reviews: %v", err)
-				return
+				return err
 			}
 		}
 
@@ -135,7 +134,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 			})
 			if err != nil {
 				log.Printf("failed to insert review replies: %v", err)
-				return
+				return err
 			}
 		}
 
@@ -157,15 +156,16 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 			})
 			if err != nil {
 				log.Printf("failed to insert review images: %v", err)
-				return
+				return err
 			}
 		}
 		err = commit(r.ctx)
 		if err != nil {
 			log.Printf("failed to commit transaction: %v", err)
-			return
+			return err
 		}
 		log.Printf("Inserted %d reviews", len(acc))
+		return nil
 	}
 	go func() {
 		var count uint32
@@ -178,14 +178,22 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 				return
 			case reviews, hasMore := <-payload.ReviewsChan:
 				if !hasMore {
-					actualInsertion(acc)
+					err := actualInsertion(acc)
+					if err != nil {
+						payload.ErrChan <- err
+						return
+					}
 					log.Printf("Finished inserting %d reviews", count)
 					r.eventBus.Publish(events.ON_REVIEWS_INSERT_END, payload.PlaceId)
 					return
 				}
 				count += uint32(len(reviews))
 				if len(acc)+len(reviews) > MAX_BATCH_SIZE {
-					actualInsertion(acc)
+					err := actualInsertion(acc)
+					if err != nil {
+						payload.ErrChan <- err
+						return
+					}
 					acc = acc[:0]
 				}
 				acc = append(acc, reviews...)

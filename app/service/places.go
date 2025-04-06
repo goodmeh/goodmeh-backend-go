@@ -138,7 +138,9 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		}
 	}(p)
 	c := googlereviews.NewGoogleReviewsCollector(placeId, nil)
-	reviewsChan, placeChan, err := c.Collect(p.ctx)
+	scrapeContext, cancelScrape := context.WithCancel(p.ctx)
+	defer cancelScrape()
+	reviewsChan, placeChan, err := c.Collect(scrapeContext)
 	if err != nil {
 		return
 	}
@@ -177,10 +179,13 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		log.Printf("failed to commit transaction: %v", err)
 		return
 	}
+	errChan := make(chan error, 1)
 	p.eventBus.Publish(events.ON_REVIEWS_READY, events.OnReviewsReadyParams{
 		PlaceId:     placeId,
 		ReviewsChan: reviewsChan,
+		ErrChan:     errChan,
 	})
+	err = <-errChan
 }
 
 func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
