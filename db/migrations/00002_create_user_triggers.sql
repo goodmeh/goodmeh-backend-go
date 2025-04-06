@@ -35,8 +35,8 @@ UPDATE ON review FOR EACH ROW EXECUTE FUNCTION on_review_change();
 -- +goose StatementEnd
 -- +goose Down
 -- +goose StatementBegin
-DROP FUNCTION on_review_change();
 DROP TRIGGER review_change_trigger ON review;
+DROP FUNCTION on_review_change();
 DROP TRIGGER user_change_trigger ON "user";
 DROP FUNCTION on_user_change();
 -- +goose StatementEnd
