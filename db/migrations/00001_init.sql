@@ -78,10 +78,23 @@ CREATE TABLE review_reply (
 	text VARCHAR(4096) NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE request (
+	place_id VARCHAR(255) NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL,
+	status INT NOT NULL,
+	failed BOOLEAN DEFAULT (false) NOT NULL,
+	batch_job_id VARCHAR(64),
+	PRIMARY KEY (place_id, status),
+	CONSTRAINT requeststatus CHECK (
+		status >= 0
+		AND status <= 4
+	)
+);
 -- +goose StatementEnd
 -- +goose Down
 -- 
 -- +goose StatementBegin
+DROP TABLE request;
 DROP TABLE review_reply;
 DROP TABLE review_image;
 DROP TABLE review;

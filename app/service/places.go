@@ -118,6 +118,22 @@ func (p *PlaceService) InsertPlaceFields(place collector.ScrapedPlace) error {
 
 func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	log.Printf("Scraping reviews for place %s", placeId)
+	err := p.q.InsertRequest(p.ctx, repository.InsertRequestParams{
+		PlaceID: placeId,
+		Status:  repository.REQUEST_SCRAPING,
+	})
+	if err != nil {
+		log.Printf("failed to insert request: %v", err)
+		return
+	}
+	defer func(p *PlaceService) {
+		if err != nil {
+			p.q.SetRequestFailed(p.ctx, repository.SetRequestFailedParams{
+				PlaceID: placeId,
+				Status:  repository.REQUEST_SCRAPING,
+			})
+		}
+	}(p)
 	c := googlereviews.NewGoogleReviewsCollector(placeId, nil)
 	reviewsChan, placeChan, err := c.Collect(p.ctx)
 	if err != nil {
@@ -133,24 +149,32 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	p.eventBus.Publish(events.ON_PLACE_SCRAPE, place.Place)
 	log.Printf("Inserting place %s", placeId)
 	p, rollback, commit, err := p.WithTx()
-	defer rollback(p.ctx)
 	if err != nil {
 		log.Printf("failed to start transaction: %v", err)
 		return
 	}
-	err = p.InsertPlace(place)
-	if err != nil {
+	defer rollback(p.ctx)
+	if err = p.InsertPlace(place); err != nil {
 		log.Printf("failed to insert place: %v", err)
 		return
 	}
 	log.Printf("Inserting place fields %s", placeId)
-	err = p.InsertPlaceFields(place)
-	if err != nil {
+	if err = p.InsertPlaceFields(place); err != nil {
 		log.Printf("failed to insert place fields: %v", err)
 		return
 	}
+	if err = p.q.DeleteRequest(p.ctx, repository.DeleteRequestParams{
+		PlaceID: placeId,
+		Status:  repository.REQUEST_SCRAPING,
+	}); err != nil {
+		log.Printf("failed to delete request: %v", err)
+		return
+	}
+	if err = commit(p.ctx); err != nil {
+		log.Printf("failed to commit transaction: %v", err)
+		return
+	}
 	p.eventBus.Publish(events.ON_REVIEWS_READY, reviewsChan)
-	commit(p.ctx)
 }
 
 func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
@@ -163,8 +187,24 @@ func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		placePointer = nil
 	}
+	request, err := p.q.GetRequest(p.ctx, repository.GetRequestParams{
+		PlaceID: placeId,
+		Status:  repository.REQUEST_SCRAPING,
+	})
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+	requestExists := errors.Is(err, sql.ErrNoRows)
+	// If the request is already in progress and there is no place to return
+	if placePointer == nil && !requestExists && !request.Failed {
+		return nil, nil
+	}
+	// If the last scraped is less than 7 days ago and
+	// request does not exist or is not failed (means ongoing)
+	// place does not need to be scraped
 	if place.LastScraped != nil &&
-		time.Since(*place.LastScraped) < REVIEW_SCRAPE_INTERVAL_DAYS*24*time.Hour {
+		time.Since(*place.LastScraped) < REVIEW_SCRAPE_INTERVAL_DAYS*24*time.Hour &&
+		(!requestExists || !request.Failed) {
 		return placePointer, nil
 	}
 	go p.ScrapePlace(placeId, place.LastScraped)

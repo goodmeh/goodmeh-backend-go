@@ -48,6 +48,14 @@ type PlaceKeyword struct {
 	Count   int32  `json:"count"`
 }
 
+type Request struct {
+	PlaceID    string    `json:"place_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	Status     int32     `json:"status"`
+	Failed     bool      `json:"failed"`
+	BatchJobID *string   `json:"batch_job_id"`
+}
+
 type Review struct {
 	ID              string    `json:"id"`
 	UserID          string    `json:"user_id"`
