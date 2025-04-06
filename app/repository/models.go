@@ -73,12 +73,13 @@ type ReviewReply struct {
 }
 
 type User struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	PhotoUri     *string `json:"photo_uri"`
-	ReviewCount  int32   `json:"review_count"`
-	PhotoCount   int32   `json:"photo_count"`
-	RatingCount  int32   `json:"rating_count"`
-	IsLocalGuide bool    `json:"is_local_guide"`
-	Score        int32   `json:"score"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	PhotoUri        *string `json:"photo_uri"`
+	ReviewCount     int32   `json:"review_count"`
+	PhotoCount      int32   `json:"photo_count"`
+	RatingCount     int32   `json:"rating_count"`
+	IsLocalGuide    bool    `json:"is_local_guide"`
+	Score           int32   `json:"score"`
+	LongReviewCount int32   `json:"long_review_count"`
 }
