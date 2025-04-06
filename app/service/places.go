@@ -118,7 +118,7 @@ func (p *PlaceService) InsertPlaceFields(place collector.ScrapedPlace) error {
 
 func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	log.Printf("Scraping reviews for place %s", placeId)
-	err := p.q.InsertRequest(p.ctx, repository.InsertRequestParams{
+	err := p.q.InsertRequestOrSetFailedFalse(p.ctx, repository.InsertRequestOrSetFailedFalseParams{
 		PlaceID: placeId,
 		Status:  repository.REQUEST_SCRAPING,
 	})
@@ -131,6 +131,7 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 			p.q.SetRequestFailed(p.ctx, repository.SetRequestFailedParams{
 				PlaceID: placeId,
 				Status:  repository.REQUEST_SCRAPING,
+				Failed:  true,
 			})
 		}
 	}(p)
