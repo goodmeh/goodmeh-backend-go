@@ -58,3 +58,8 @@ SET name = $2,
     primary_type = $6,
     lat = $7,
     lng = $8;
+-- name: AfterReviewInsert :exec
+UPDATE place
+SET last_scraped = NOW(),
+    recompute_stats = TRUE
+WHERE id = $1;

@@ -28,7 +28,9 @@ type PlaceService struct {
 }
 
 func NewPlaceService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *PlaceService {
-	return &PlaceService{ctx, q, eventBus}
+	p := &PlaceService{ctx, q, eventBus}
+	p.eventBus.Subscribe(events.ON_REVIEWS_INSERT_END, events.AssertHandler(p.AfterReviewInsert))
+	return p
 }
 
 func (p *PlaceService) WithTx() (
@@ -175,7 +177,10 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		log.Printf("failed to commit transaction: %v", err)
 		return
 	}
-	p.eventBus.Publish(events.ON_REVIEWS_READY, reviewsChan)
+	p.eventBus.Publish(events.ON_REVIEWS_READY, events.OnReviewsReadyParams{
+		PlaceId:     placeId,
+		ReviewsChan: reviewsChan,
+	})
 }
 
 func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
@@ -210,4 +215,11 @@ func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
 	}
 	go p.ScrapePlace(placeId, place.LastScraped)
 	return placePointer, nil
+}
+
+func (p *PlaceService) AfterReviewInsert(placeId string) {
+	err := p.q.AfterReviewInsert(p.ctx, placeId)
+	if err != nil {
+		log.Printf("failed to update place last scraped: %v", err)
+	}
 }

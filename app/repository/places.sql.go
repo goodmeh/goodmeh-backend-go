@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const afterReviewInsert = `-- name: AfterReviewInsert :exec
+UPDATE place
+SET last_scraped = NOW(),
+    recompute_stats = TRUE
+WHERE id = $1
+`
+
+func (q *Queries) AfterReviewInsert(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, afterReviewInsert, id)
+	return err
+}
+
 const getPlaceById = `-- name: GetPlaceById :one
 SELECT p.id, p.name, p.rating, p.weighted_rating, p.user_rating_count, p.summary, p.last_scraped, p.image_url, p.recompute_stats, p.primary_type, p.business_summary, p.price_range, p.earliest_review_date, p.lat, p.lng
 FROM place p

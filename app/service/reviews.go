@@ -52,7 +52,7 @@ func (r *ReviewService) GetReviewsImages(reviewIds []string) ([][]string, error)
 	return images, err
 }
 
-func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedReview) {
+func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 	actualInsertion := func(acc []collector.ScrapedReview) {
 		if len(acc) == 0 {
 			return
@@ -176,11 +176,11 @@ func (r *ReviewService) InsertReviews(reviewsChan <-chan []collector.ScrapedRevi
 			case <-r.ctx.Done():
 				actualInsertion(acc)
 				return
-			case reviews, hasMore := <-reviewsChan:
+			case reviews, hasMore := <-payload.ReviewsChan:
 				if !hasMore {
 					actualInsertion(acc)
 					log.Printf("Finished inserting %d reviews", count)
-					r.eventBus.Publish(events.ON_REVIEWS_INSERT_END, nil)
+					r.eventBus.Publish(events.ON_REVIEWS_INSERT_END, payload.PlaceId)
 					return
 				}
 				count += uint32(len(reviews))

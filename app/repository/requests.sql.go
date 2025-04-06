@@ -54,7 +54,8 @@ const insertRequestOrSetFailedFalse = `-- name: InsertRequestOrSetFailedFalse :e
 INSERT INTO request (place_id, created_at, status, batch_job_id)
 VALUES ($1, NOW(), $2, $3) ON CONFLICT (place_id, status) DO
 UPDATE
-SET failed = false
+SET failed = false,
+    created_at = NOW()
 `
 
 type InsertRequestOrSetFailedFalseParams struct {

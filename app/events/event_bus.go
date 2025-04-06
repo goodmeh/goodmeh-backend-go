@@ -2,10 +2,6 @@ package events
 
 type EventType int
 
-type Event struct {
-	Payload any
-}
-
 type Subscriber func(any)
 
 type EventBus struct {
