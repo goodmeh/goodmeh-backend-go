@@ -142,11 +142,8 @@ SET user_id = EXCLUDED.user_id,
     rating = EXCLUDED.rating,
     text = EXCLUDED.text,
     created_at = EXCLUDED.created_at,
-    weight = EXCLUDED.weight,
     place_id = EXCLUDED.place_id,
-    price_range = EXCLUDED.price_range,
-    summary = EXCLUDED.summary,
-    business_summary = EXCLUDED.business_summary
+    price_range = EXCLUDED.price_range
 `
 
 type InsertReviewsBatchResults struct {
@@ -212,18 +209,16 @@ INSERT INTO "user" (
         review_count,
         photo_count,
         rating_count,
-        is_local_guide,
-        score
+        is_local_guide
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (id) DO
+VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO
 UPDATE
 SET name = EXCLUDED.name,
     photo_uri = EXCLUDED.photo_uri,
     review_count = EXCLUDED.review_count,
     photo_count = EXCLUDED.photo_count,
     rating_count = EXCLUDED.rating_count,
-    is_local_guide = EXCLUDED.is_local_guide,
-    score = EXCLUDED.score
+    is_local_guide = EXCLUDED.is_local_guide
 `
 
 type InsertUsersBatchResults struct {
@@ -240,7 +235,6 @@ type InsertUsersParams struct {
 	PhotoCount   int32   `json:"photo_count"`
 	RatingCount  int32   `json:"rating_count"`
 	IsLocalGuide bool    `json:"is_local_guide"`
-	Score        int32   `json:"score"`
 }
 
 func (q *Queries) InsertUsers(ctx context.Context, arg []InsertUsersParams) *InsertUsersBatchResults {
@@ -254,7 +248,6 @@ func (q *Queries) InsertUsers(ctx context.Context, arg []InsertUsersParams) *Ins
 			a.PhotoCount,
 			a.RatingCount,
 			a.IsLocalGuide,
-			a.Score,
 		}
 		batch.Queue(insertUsers, vals...)
 	}

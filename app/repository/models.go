@@ -88,6 +88,6 @@ type User struct {
 	PhotoCount      int32   `json:"photo_count"`
 	RatingCount     int32   `json:"rating_count"`
 	IsLocalGuide    bool    `json:"is_local_guide"`
-	Score           int32   `json:"score"`
 	LongReviewCount int32   `json:"long_review_count"`
+	Score           *int32  `json:"score"`
 }

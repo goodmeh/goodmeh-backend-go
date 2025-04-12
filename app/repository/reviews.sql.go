@@ -11,7 +11,7 @@ import (
 
 const getPlaceReviews = `-- name: GetPlaceReviews :many
 SELECT r.id, r.user_id, r.rating, r.text, r.created_at, r.weight, r.place_id, r.price_range, r.summary, r.business_summary,
-    u.id, u.name, u.photo_uri, u.review_count, u.photo_count, u.rating_count, u.is_local_guide, u.score, u.long_review_count,
+    u.id, u.name, u.photo_uri, u.review_count, u.photo_count, u.rating_count, u.is_local_guide, u.long_review_count, u.score,
     rr.review_id, rr.text, rr.created_at
 FROM review r
     INNER JOIN "user" u ON r.user_id = u.id
@@ -60,8 +60,8 @@ func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams
 			&i.User.PhotoCount,
 			&i.User.RatingCount,
 			&i.User.IsLocalGuide,
-			&i.User.Score,
 			&i.User.LongReviewCount,
+			&i.User.Score,
 			&i.ReviewReply.ReviewID,
 			&i.ReviewReply.Text,
 			&i.ReviewReply.CreatedAt,

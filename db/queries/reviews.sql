@@ -31,11 +31,8 @@ SET user_id = EXCLUDED.user_id,
     rating = EXCLUDED.rating,
     text = EXCLUDED.text,
     created_at = EXCLUDED.created_at,
-    weight = EXCLUDED.weight,
     place_id = EXCLUDED.place_id,
-    price_range = EXCLUDED.price_range,
-    summary = EXCLUDED.summary,
-    business_summary = EXCLUDED.business_summary;
+    price_range = EXCLUDED.price_range;
 -- name: InsertReviewReplies :batchexec
 INSERT INTO review_reply (
         review_id,
