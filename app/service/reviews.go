@@ -55,7 +55,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) error
 	actualInsertion := func(acc []collector.ScrapedReview) error {
 		var err error
 		if len(acc) == 0 {
-			return err
+			return nil
 		}
 		service, rollback, commit, err := r.WithTx()
 		if err != nil {
@@ -169,11 +169,12 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) error
 	go func() {
 		var count uint32
 		const MAX_BATCH_SIZE = 5000
+		defer close(payload.ErrChan)
 		acc := make([]collector.ScrapedReview, 0, MAX_BATCH_SIZE)
 		for {
 			select {
 			case <-r.ctx.Done():
-				actualInsertion(acc)
+				payload.ErrChan <- actualInsertion(acc)
 				return
 			case reviews, hasMore := <-payload.ReviewsChan:
 				if !hasMore {
