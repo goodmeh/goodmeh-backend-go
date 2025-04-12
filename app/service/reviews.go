@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"goodmeh/app/events"
 	"goodmeh/app/repository"
-	"goodmeh/app/summarizer"
+	"goodmeh/app/summariser"
 	"log"
 	"math"
 	"slices"
@@ -224,7 +224,7 @@ func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 				})
 			}
 		}()
-		summarizer := summarizer.NewOpenAiSummarizer()
+		summariser := summariser.NewOpenAiSummariser()
 		reviews, err := r.q.GetRecentReviewsWithEnoughText(r.ctx, repository.GetRecentReviewsWithEnoughTextParams{
 			PlaceID: placeId,
 			Limit:   2000,
@@ -235,10 +235,10 @@ func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 			log.Printf("failed to get reviews: %v", err)
 			return
 		}
-		summary, err := summarizer.SummarizeReviews(reviews)
+		summary, err := summariser.SummariseReviews(reviews)
 		if err != nil {
 			failed = true
-			log.Printf("failed to summarize reviews: %v", err)
+			log.Printf("failed to summarise reviews: %v", err)
 			return
 		}
 		if err = r.q.UpdatePlaceSummary(r.ctx, repository.UpdatePlaceSummaryParams{

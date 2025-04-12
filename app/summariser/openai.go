@@ -1,4 +1,4 @@
-package summarizer
+package summariser
 
 import (
 	"bufio"
@@ -71,20 +71,20 @@ var SUMMARY_RESPONSE_FORMAT = openai.ChatCompletionNewParamsResponseFormatUnion{
 	},
 }
 
-type OpenAiSummarizer struct {
+type OpenAiSummariser struct {
 	client openai.Client
 }
 
-func NewOpenAiSummarizer() OpenAiSummarizer {
+func NewOpenAiSummariser() OpenAiSummariser {
 	client := openai.NewClient(
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
 	)
-	return OpenAiSummarizer{
+	return OpenAiSummariser{
 		client: client,
 	}
 }
 
-func (s OpenAiSummarizer) preprocessReviews(text []string) (string, error) {
+func (s OpenAiSummariser) preprocessReviews(text []string) (string, error) {
 	encoding, err := tokenizer.ForModel(tokenizer.GPT4o)
 	if err != nil {
 		return "", err
@@ -111,7 +111,7 @@ func (s OpenAiSummarizer) preprocessReviews(text []string) (string, error) {
 	return string(result), nil
 }
 
-func (s OpenAiSummarizer) summarize(combinedReviews string) (string, error) {
+func (s OpenAiSummariser) summarise(combinedReviews string) (string, error) {
 	chatCompletion, err := s.client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Model: openai.ChatModelGPT4oMini,
 		Messages: []openai.ChatCompletionMessageParamUnion{
@@ -126,7 +126,7 @@ func (s OpenAiSummarizer) summarize(combinedReviews string) (string, error) {
 	return chatCompletion.Choices[0].Message.Content, nil
 }
 
-func (s OpenAiSummarizer) postProcessSummary(output string) SummariesSchema {
+func (s OpenAiSummariser) postProcessSummary(output string) SummariesSchema {
 	var summaries SummariesSchema
 	err := json.Unmarshal([]byte(output), &summaries)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s OpenAiSummarizer) postProcessSummary(output string) SummariesSchema {
 	return summaries
 }
 
-func (s OpenAiSummarizer) SummarizeReviews(text []string) (SummariesSchema, error) {
+func (s OpenAiSummariser) SummariseReviews(text []string) (SummariesSchema, error) {
 	if len(text) < TEXT_LENGTH_THRESHOLD && arr.Reduce(text, func(count int, reviewText string) int {
 		return count + len(reviewText)
 	}, 0) < TEXT_LENGTH_THRESHOLD {
@@ -146,14 +146,14 @@ func (s OpenAiSummarizer) SummarizeReviews(text []string) (SummariesSchema, erro
 	if err != nil {
 		return SummariesSchema{}, err
 	}
-	ouptut, err := s.summarize(combinedReviews)
+	ouptut, err := s.summarise(combinedReviews)
 	if err != nil {
 		return SummariesSchema{}, err
 	}
 	return s.postProcessSummary(ouptut), nil
 }
 
-func (s OpenAiSummarizer) SummarizeIndividualReviews(reviews []IndividualSummaryInput) (string, error) {
+func (s OpenAiSummariser) SummariseIndividualReviews(reviews []IndividualSummaryInput) (string, error) {
 	if len(reviews) == 0 {
 		return "", nil
 	}
@@ -175,7 +175,7 @@ func (s OpenAiSummarizer) SummarizeIndividualReviews(reviews []IndividualSummary
 	for _, review := range reviews {
 		body := openai.ChatCompletionNewParams{
 			Messages: []openai.ChatCompletionMessageParamUnion{
-				openai.SystemMessage("The data provided is an individual review of a place on Google maps as submitted by a user. The objective is to summarize the review. This is done twice with a different persona and objective each time. One version is intended for potential customers. The other version is intended for business managers. Use the following steps in order to generate the two summaries. Keep the summaries to a maximum of 3 sentences each. Step 1 - Process the review data provided to establish a context and understanding. Identify key details and important information that should be reflected in the summary. Step 2 - Adopt the persona and voice of the user. The summary should look and sound like it was from the original user. Adopt their language and writing style, but focus on distilling and improving the clarity and quality of the text. Step 3 - Adopt the persona of a business analyst looking at customer feedback to extract insights. Pay attention to what the user was pleased or pained by. Adopt an objective and neutral writing style and tone. Focus on extracting valuable insight from the review data."),
+				openai.SystemMessage("The data provided is an individual review of a place on Google maps as submitted by a user. The objective is to summarise the review. This is done twice with a different persona and objective each time. One version is intended for potential customers. The other version is intended for business managers. Use the following steps in order to generate the two summaries. Keep the summaries to a maximum of 3 sentences each. Step 1 - Process the review data provided to establish a context and understanding. Identify key details and important information that should be reflected in the summary. Step 2 - Adopt the persona and voice of the user. The summary should look and sound like it was from the original user. Adopt their language and writing style, but focus on distilling and improving the clarity and quality of the text. Step 3 - Adopt the persona of a business analyst looking at customer feedback to extract insights. Pay attention to what the user was pleased or pained by. Adopt an objective and neutral writing style and tone. Focus on extracting valuable insight from the review data."),
 				openai.UserMessage(review.Text),
 			},
 			Model:          openai.ChatModelGPT4oMini,
@@ -216,7 +216,7 @@ func (s OpenAiSummarizer) SummarizeIndividualReviews(reviews []IndividualSummary
 	return batchJob.ID, nil
 }
 
-func (s OpenAiSummarizer) GetBatchJobResult(jobId string) (map[string]SummariesSchema, error) {
+func (s OpenAiSummariser) GetBatchJobResult(jobId string) (map[string]SummariesSchema, error) {
 	results := make(map[string]SummariesSchema)
 	batchJob, err := s.client.Batches.Get(context.TODO(), jobId)
 	if err != nil {
