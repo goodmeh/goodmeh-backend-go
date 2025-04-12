@@ -2,12 +2,12 @@
 -- +goose StatementBegin
 CREATE TABLE place (
 	id VARCHAR(255) PRIMARY KEY,
-	name TEXT NOT NULL,
+	name VARCHAR(1024) NOT NULL,
 	rating FLOAT DEFAULT 0 NOT NULL,
 	weighted_rating FLOAT DEFAULT 0 NOT NULL,
 	user_rating_count INT DEFAULT 0 NOT NULL,
 	summary VARCHAR(4096),
-	last_scraped TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	last_scraped TIMESTAMPTZ,
 	image_url VARCHAR(1024),
 	recompute_stats BOOLEAN DEFAULT FALSE NOT NULL,
 	primary_type VARCHAR(64),
@@ -40,7 +40,7 @@ CREATE TABLE place_keyword (
 );
 CREATE TABLE "user" (
 	id VARCHAR(64) NOT NULL PRIMARY KEY,
-	name VARCHAR(64) NOT NULL,
+	name VARCHAR(256) NOT NULL,
 	photo_uri VARCHAR(256),
 	review_count INTEGER DEFAULT 0 NOT NULL,
 	photo_count INTEGER DEFAULT 0 NOT NULL,
@@ -53,9 +53,9 @@ CREATE TABLE review (
 	id VARCHAR(255) PRIMARY KEY,
 	user_id VARCHAR(64) NOT NULL REFERENCES "user" (id),
 	rating INTEGER NOT NULL,
-	text VARCHAR(4096) NOT NULL,
+	text TEXT NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL,
-	weight INTEGER NOT NULL,
+	weight INTEGER NOT NULL DEFAULT 500,
 	place_id VARCHAR(64) NOT NULL REFERENCES place (id),
 	price_range INTEGER,
 	summary VARCHAR(512),
@@ -79,10 +79,23 @@ CREATE TABLE review_reply (
 	text VARCHAR(4096) NOT NULL,
 	created_at TIMESTAMPTZ NOT NULL
 );
+CREATE TABLE request (
+	place_id VARCHAR(255) NOT NULL,
+	created_at TIMESTAMPTZ NOT NULL,
+	status INT NOT NULL,
+	failed BOOLEAN DEFAULT (false) NOT NULL,
+	batch_job_id VARCHAR(64),
+	PRIMARY KEY (place_id, status),
+	CONSTRAINT requeststatus CHECK (
+		status >= 0
+		AND status <= 4
+	)
+);
 -- +goose StatementEnd
 -- +goose Down
 -- 
 -- +goose StatementBegin
+DROP TABLE request;
 DROP TABLE review_reply;
 DROP TABLE review_image;
 DROP TABLE review;

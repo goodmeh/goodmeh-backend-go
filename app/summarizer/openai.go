@@ -72,7 +72,7 @@ var SUMMARY_RESPONSE_FORMAT = openai.ChatCompletionNewParamsResponseFormatUnion{
 }
 
 type OpenAiSummarizer struct {
-	Client openai.Client
+	client openai.Client
 }
 
 func NewSummarizer() OpenAiSummarizer {
@@ -80,7 +80,7 @@ func NewSummarizer() OpenAiSummarizer {
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
 	)
 	return OpenAiSummarizer{
-		Client: client,
+		client: client,
 	}
 }
 
@@ -112,7 +112,7 @@ func (s OpenAiSummarizer) preprocessReviews(text []string) (string, error) {
 }
 
 func (s OpenAiSummarizer) summarize(combinedReviews string) (string, error) {
-	chatCompletion, err := s.Client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
+	chatCompletion, err := s.client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Model: openai.ChatModelGPT4oMini,
 		Messages: []openai.ChatCompletionMessageParamUnion{
 			openai.SystemMessage("The data you will be given to work with are a collection of individual reviews of a place on Google maps as submitted by users. The goal is to generate two summaries with a different purpose for a different audience, based on the same set of review data. The first summary is intended for potential customers. The second summary is intended for business owners or managers. Use the following steps in order to generate the two summaries with the highest quality and accuracy. Step 1 - Read in all of the data provided to establish a context and understanding. If there are many reviews, identify key details and important  information that should be reflected in the summary. If there are few reviews, do not generate information or detail where there is none, if there is insufficient data to provide a good summary, you can respond with a statement to state that. Step 2 - Adopt the persona of a connoisseur and professional critic. This summary should let customers understand the essence of the place with the main aim of aiding them in deciding if they would enjoy it or not. Step 3 - Adopt the persona of a consultant and advisor. This summary should help business owners or managers understand what they are doing well by highlighting what customers are delighted by. Also help them improve their operations by surfacing any blindspots by including customer feedback if any. Keep the summaries to a maximum of 6 sentences each. You can use markdown bold and italic formatting to highlight key points."),
@@ -198,14 +198,14 @@ func (s OpenAiSummarizer) SummarizeIndividualReviews(reviews []IndividualSummary
 	if err != nil {
 		return "", err
 	}
-	file, err := s.Client.Files.New(context.TODO(), openai.FileNewParams{
+	file, err := s.client.Files.New(context.TODO(), openai.FileNewParams{
 		File:    f,
 		Purpose: openai.FilePurposeBatch,
 	})
 	if err != nil {
 		return "", err
 	}
-	batchJob, err := s.Client.Batches.New(context.TODO(), openai.BatchNewParams{
+	batchJob, err := s.client.Batches.New(context.TODO(), openai.BatchNewParams{
 		CompletionWindow: openai.BatchNewParamsCompletionWindow24h,
 		Endpoint:         openai.BatchNewParamsEndpointV1ChatCompletions,
 		InputFileID:      file.ID,
@@ -218,7 +218,7 @@ func (s OpenAiSummarizer) SummarizeIndividualReviews(reviews []IndividualSummary
 
 func (s OpenAiSummarizer) GetBatchJobResult(jobId string) (map[string]SummariesSchema, error) {
 	results := make(map[string]SummariesSchema)
-	batchJob, err := s.Client.Batches.Get(context.TODO(), jobId)
+	batchJob, err := s.client.Batches.Get(context.TODO(), jobId)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,7 @@ func (s OpenAiSummarizer) GetBatchJobResult(jobId string) (map[string]SummariesS
 	if batchJob.Status != openai.BatchStatusCompleted {
 		return nil, nil
 	}
-	response, err := s.Client.Files.Content(context.TODO(), batchJob.OutputFileID)
+	response, err := s.client.Files.Content(context.TODO(), batchJob.OutputFileID)
 	if err != nil {
 		return nil, err
 	}

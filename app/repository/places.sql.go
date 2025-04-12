@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const afterReviewInsert = `-- name: AfterReviewInsert :exec
+UPDATE place
+SET last_scraped = NOW(),
+    recompute_stats = TRUE
+WHERE id = $1
+`
+
+func (q *Queries) AfterReviewInsert(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, afterReviewInsert, id)
+	return err
+}
+
 const getPlaceById = `-- name: GetPlaceById :one
 SELECT p.id, p.name, p.rating, p.weighted_rating, p.user_rating_count, p.summary, p.last_scraped, p.image_url, p.recompute_stats, p.primary_type, p.business_summary, p.price_range, p.earliest_review_date, p.lat, p.lng
 FROM place p
@@ -147,6 +159,62 @@ func (q *Queries) GetRandomPlaces(ctx context.Context, limit int32) ([]Place, er
 	return items, nil
 }
 
+const insertPlace = `-- name: InsertPlace :exec
+INSERT INTO place (
+        id,
+        name,
+        user_rating_count,
+        image_url,
+        recompute_stats,
+        primary_type,
+        lat,
+        lng
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    ) ON CONFLICT (id) DO
+UPDATE
+SET name = $2,
+    user_rating_count = $3,
+    image_url = $4,
+    recompute_stats = $5,
+    primary_type = $6,
+    lat = $7,
+    lng = $8
+`
+
+type InsertPlaceParams struct {
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	UserRatingCount int32    `json:"user_rating_count"`
+	ImageUrl        *string  `json:"image_url"`
+	RecomputeStats  bool     `json:"recompute_stats"`
+	PrimaryType     *string  `json:"primary_type"`
+	Lat             *float64 `json:"lat"`
+	Lng             *float64 `json:"lng"`
+}
+
+func (q *Queries) InsertPlace(ctx context.Context, arg InsertPlaceParams) error {
+	_, err := q.db.Exec(ctx, insertPlace,
+		arg.ID,
+		arg.Name,
+		arg.UserRatingCount,
+		arg.ImageUrl,
+		arg.RecomputeStats,
+		arg.PrimaryType,
+		arg.Lat,
+		arg.Lng,
+	)
+	return err
+}
+
 const insertPlaceField = `-- name: InsertPlaceField :exec
 INSERT INTO place_field (place_id, field_id)
 VALUES (
@@ -168,5 +236,21 @@ type InsertPlaceFieldParams struct {
 
 func (q *Queries) InsertPlaceField(ctx context.Context, arg InsertPlaceFieldParams) error {
 	_, err := q.db.Exec(ctx, insertPlaceField, arg.PlaceID, arg.Name, arg.CategoryID)
+	return err
+}
+
+const updatePlaceSummary = `-- name: UpdatePlaceSummary :exec
+UPDATE place
+SET summary = $1
+WHERE id = $2
+`
+
+type UpdatePlaceSummaryParams struct {
+	Summary *string `json:"summary"`
+	ID      string  `json:"id"`
+}
+
+func (q *Queries) UpdatePlaceSummary(ctx context.Context, arg UpdatePlaceSummaryParams) error {
+	_, err := q.db.Exec(ctx, updatePlaceSummary, arg.Summary, arg.ID)
 	return err
 }

@@ -4,13 +4,13 @@ import (
 	"goodmeh/app/dto/response"
 	"goodmeh/app/events"
 	"goodmeh/app/mapper"
-	"goodmeh/app/repository"
 	"goodmeh/app/service"
 	"goodmeh/app/socket"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/goodmeh/backend-private/models"
 )
 
 type IPlacesController interface {
@@ -24,11 +24,22 @@ type PlacesController struct {
 	eventBus      *events.EventBus
 }
 
-func (p *PlacesController) GetPlace(c *gin.Context) {
-	// TODO: implement GetPlace
-	c.JSON(http.StatusInternalServerError, gin.H{
-		"error": "Not implemented",
-	})
+func (p *PlacesController) RequestPlace(c *gin.Context) {
+	id := c.Param("id")
+	place, err := p.placeService.RequestPlace(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	if place == nil {
+		c.JSON(http.StatusOK, response.RequestPlaceResponseDto{
+			Status: "Scraping",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, mapper.ToPlaceResponseDto(*place))
 }
 
 func (p *PlacesController) GetRandomPlaces(c *gin.Context) {
@@ -123,23 +134,19 @@ func (p *PlacesController) GetPlaceNames(c *gin.Context) {
 	c.JSON(http.StatusOK, placeNames)
 }
 
-func (p *PlacesController) OnPlaceScrape(event events.Event) {
-	place, ok := event.Payload.(repository.Place)
-	if !ok {
-		return
-	}
-	p.socketServer.To(place.ID, place)
+func (p *PlacesController) OnPlaceScrape(place models.Place) error {
+	return p.socketServer.To(place.ID, place)
 }
 
 func (p *PlacesController) Init(r *gin.RouterGroup) {
 	g := r.Group("/v1/places")
 	g.GET("/", p.GetPlaceNames)
-	g.GET("/:id", p.GetPlace)
+	g.POST("/:id", p.RequestPlace)
 	g.GET("/:id/reviews", p.GetPlaceReviews)
 	g.GET("/:id/images", p.GetPlaceImages)
 	g.GET("/discover", p.GetRandomPlaces)
 
-	p.eventBus.Subscribe(events.ON_PLACE_SCRAPE, p.OnPlaceScrape)
+	p.eventBus.Subscribe(events.ON_PLACE_SCRAPE, events.AssertHandler(p.OnPlaceScrape))
 }
 
 func NewPlacesController(

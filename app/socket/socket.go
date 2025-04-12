@@ -66,15 +66,16 @@ func (server *Server) On(event string, handler EventHandler) {
 	server.handlers[event] = handler
 }
 
-func (server *Server) To(roomID string, data any) {
+func (server *Server) To(roomID string, data any) error {
 	server.rmu.RLock()
 	defer server.rmu.RUnlock()
 
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
-		return
+		return err
 	}
 	if sessions, ok := server.rooms[roomID]; ok {
-		server.melody.BroadcastMultiple(dataBytes, sessions)
+		return server.melody.BroadcastMultiple(dataBytes, sessions)
 	}
+	return nil
 }

@@ -26,7 +26,7 @@ type Place struct {
 	WeightedRating     float64    `json:"weighted_rating"`
 	UserRatingCount    int32      `json:"user_rating_count"`
 	Summary            *string    `json:"summary"`
-	LastScraped        time.Time  `json:"last_scraped"`
+	LastScraped        *time.Time `json:"last_scraped"`
 	ImageUrl           *string    `json:"image_url"`
 	RecomputeStats     bool       `json:"recompute_stats"`
 	PrimaryType        *string    `json:"primary_type"`
@@ -46,6 +46,14 @@ type PlaceKeyword struct {
 	PlaceID string `json:"place_id"`
 	Keyword string `json:"keyword"`
 	Count   int32  `json:"count"`
+}
+
+type Request struct {
+	PlaceID    string    `json:"place_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	Status     int32     `json:"status"`
+	Failed     bool      `json:"failed"`
+	BatchJobID *string   `json:"batch_job_id"`
 }
 
 type Review struct {

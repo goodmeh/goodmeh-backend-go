@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"goodmeh/app/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,11 @@ type IHealthController interface {
 	Init(*gin.RouterGroup)
 }
 
-type HealthController struct{}
+type HealthController struct {
+	// This is here because wire complains because it thinks fieldService is not used
+	// but it is used to listen to events
+	fieldService service.IFieldService
+}
 
 func (h *HealthController) Health(c *gin.Context) {
 	c.String(http.StatusOK, "OK")
@@ -23,6 +28,6 @@ func (h *HealthController) Init(r *gin.RouterGroup) {
 	g.GET("", h.Health)
 }
 
-func NewHealthController() *HealthController {
-	return &HealthController{}
+func NewHealthController(fieldService service.IFieldService) *HealthController {
+	return &HealthController{fieldService: fieldService}
 }
