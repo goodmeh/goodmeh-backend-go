@@ -11,7 +11,7 @@ UPDATE ON "user" FOR EACH ROW EXECUTE FUNCTION on_user_change();
 CREATE FUNCTION on_review_change() RETURNS TRIGGER AS $$ BEGIN IF TG_OP = 'INSERT'
 AND LENGTH(NEW.text) > 200 THEN
 UPDATE "user"
-SET score = score + 10
+SET long_review_count = long_review_count + 1
 WHERE id = NEW.user_id;
 ELSEIF TG_OP = 'UPDATE'
 AND (LENGTH(OLD.text) > 200) != (LENGTH(NEW.text) > 200) THEN
