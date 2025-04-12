@@ -238,3 +238,19 @@ func (q *Queries) InsertPlaceField(ctx context.Context, arg InsertPlaceFieldPara
 	_, err := q.db.Exec(ctx, insertPlaceField, arg.PlaceID, arg.Name, arg.CategoryID)
 	return err
 }
+
+const updatePlaceSummary = `-- name: UpdatePlaceSummary :exec
+UPDATE place
+SET summary = $1
+WHERE id = $2
+`
+
+type UpdatePlaceSummaryParams struct {
+	Summary *string `json:"summary"`
+	ID      string  `json:"id"`
+}
+
+func (q *Queries) UpdatePlaceSummary(ctx context.Context, arg UpdatePlaceSummaryParams) error {
+	_, err := q.db.Exec(ctx, updatePlaceSummary, arg.Summary, arg.ID)
+	return err
+}

@@ -109,3 +109,31 @@ func (q *Queries) GetReviewImageUrls(ctx context.Context, reviewIds []string) ([
 	}
 	return items, nil
 }
+
+const getReviewsWithEnoughText = `-- name: GetReviewsWithEnoughText :many
+SELECT text
+FROM review
+WHERE place_id = $1
+    AND text != ''
+    AND LENGTH(text) > 50
+`
+
+func (q *Queries) GetReviewsWithEnoughText(ctx context.Context, placeID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, getReviewsWithEnoughText, placeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			return nil, err
+		}
+		items = append(items, text)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

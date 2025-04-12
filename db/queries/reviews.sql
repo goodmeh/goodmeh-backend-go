@@ -49,3 +49,9 @@ SET text = EXCLUDED.text,
 -- name: InsertReviewImages :batchexec
 INSERT INTO review_image (review_id, image_url)
 VALUES ($1, $2) ON CONFLICT (review_id, image_url) DO NOTHING;
+-- name: GetReviewsWithEnoughText :many
+SELECT text
+FROM review
+WHERE place_id = $1
+    AND text != ''
+    AND LENGTH(text) > 50;

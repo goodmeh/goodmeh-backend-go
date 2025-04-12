@@ -63,3 +63,7 @@ UPDATE place
 SET last_scraped = NOW(),
     recompute_stats = TRUE
 WHERE id = $1;
+-- name: UpdatePlaceSummary :exec
+UPDATE place
+SET summary = $1
+WHERE id = $2;
