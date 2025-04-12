@@ -115,10 +115,19 @@ const getRecentReviewsWithEnoughText = `-- name: GetRecentReviewsWithEnoughText 
 SELECT text
 FROM review
 WHERE place_id = $1
-    AND text!= ''
+    AND text != ''
     AND LENGTH(text) > 50
-order by 
-random() * exp(-$3::FLOAT * EXTRACT(day from now() - created_at)) DESC
+ORDER BY --
+	-- Using exponential decay function: weight = e^(-decay * t)
+    -- decay can be adjusted to control how quickly probability decreases
+    -- larger decay, weight decreases faster, more biased towards recent reviews
+    -- recommended decay is 0.0038=ln(2)/182, which means weight will be approximately halved every 182 days(half a year)
+    random() * exp(
+        - $3::FLOAT * EXTRACT(
+            DAY
+            FROM now() - created_at
+        )
+    ) DESC
 LIMIT $2
 `
 
