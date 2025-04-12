@@ -8,7 +8,7 @@ import (
 )
 
 type IFieldService interface {
-	InsertFields(fields [][2]string)
+	InsertFields(fields [][2]string) error
 }
 
 type FieldService struct {
@@ -23,11 +23,11 @@ func NewFieldService(ctx context.Context, q *repository.Queries, eventBus *event
 	return f
 }
 
-func (f *FieldService) InsertFields(fields [][2]string) {
+func (f *FieldService) InsertFields(fields [][2]string) error {
 	categories, err := f.q.GetFieldCategories(f.ctx)
 	if err != nil {
 		log.Printf("Error getting field categories: %v", err)
-		return
+		return err
 	}
 	categoryMap := make(map[string]int32)
 	for _, category := range categories {
@@ -42,7 +42,8 @@ func (f *FieldService) InsertFields(fields [][2]string) {
 		})
 		if err != nil {
 			log.Printf("Error inserting field %s: %v", fieldName, err)
-			return
+			return err
 		}
 	}
+	return nil
 }

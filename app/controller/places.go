@@ -134,8 +134,8 @@ func (p *PlacesController) GetPlaceNames(c *gin.Context) {
 	c.JSON(http.StatusOK, placeNames)
 }
 
-func (p *PlacesController) OnPlaceScrape(place models.Place) {
-	p.socketServer.To(place.ID, place)
+func (p *PlacesController) OnPlaceScrape(place models.Place) error {
+	return p.socketServer.To(place.ID, place)
 }
 
 func (p *PlacesController) Init(r *gin.RouterGroup) {

@@ -51,7 +51,7 @@ func (r *ReviewService) GetReviewsImages(reviewIds []string) ([][]string, error)
 	return images, err
 }
 
-func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
+func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) error {
 	actualInsertion := func(acc []collector.ScrapedReview) error {
 		var err error
 		if len(acc) == 0 {
@@ -196,6 +196,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 			}
 		}
 	}()
+	return nil
 }
 
 func NewReviewService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *ReviewService {

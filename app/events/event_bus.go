@@ -2,7 +2,7 @@ package events
 
 type EventType int
 
-type Subscriber func(any)
+type Subscriber func(any) error
 
 type EventBus struct {
 	subscribers map[EventType][]Subscriber
@@ -29,10 +29,10 @@ func (eb *EventBus) Publish(eventType EventType, payload any) {
 	}
 }
 
-func AssertHandler[T any](handler func(T)) func(any) {
-	return func(payload any) {
+func AssertHandler[T any](handler func(T) error) func(any) error {
+	return func(payload any) error {
 		if p, ok := payload.(T); ok {
-			handler(p)
+			return handler(p)
 		} else {
 			panic("Invalid payload type")
 		}
