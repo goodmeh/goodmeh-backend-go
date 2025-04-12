@@ -204,17 +204,19 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) error
 
 func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 	go func() {
+		failed := false
 		log.Printf("Summarising reviews for place %s", placeId)
 		err := r.q.InsertRequestOrSetFailedFalse(r.ctx, repository.InsertRequestOrSetFailedFalseParams{
 			PlaceID: placeId,
 			Status:  repository.REQUEST_SUMMARISING,
 		})
 		if err != nil {
+			failed = true
 			log.Printf("failed to insert request: %v", err)
 			return
 		}
 		defer func() {
-			if err != nil {
+			if failed {
 				r.q.SetRequestFailed(r.ctx, repository.SetRequestFailedParams{
 					PlaceID: placeId,
 					Status:  repository.REQUEST_SUMMARISING,
@@ -229,11 +231,13 @@ func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 			Decay:   math.Log2(182),
 		})
 		if err != nil {
+			failed = true
 			log.Printf("failed to get reviews: %v", err)
 			return
 		}
 		summary, err := summarizer.SummarizeReviews(reviews)
 		if err != nil {
+			failed = true
 			log.Printf("failed to summarize reviews: %v", err)
 			return
 		}
@@ -241,6 +245,7 @@ func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 			ID:      placeId,
 			Summary: &summary.Summary,
 		}); err != nil {
+			failed = true
 			log.Printf("failed to update place summary: %v", err)
 		}
 	}()
