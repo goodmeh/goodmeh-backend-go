@@ -75,7 +75,7 @@ type OpenAiSummarizer struct {
 	client openai.Client
 }
 
-func NewSummarizer() OpenAiSummarizer {
+func NewOpenAiSummarizer() OpenAiSummarizer {
 	client := openai.NewClient(
 		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
 	)
