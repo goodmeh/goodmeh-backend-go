@@ -28,9 +28,7 @@ type PlaceService struct {
 }
 
 func NewPlaceService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *PlaceService {
-	p := &PlaceService{ctx, q, eventBus}
-	p.eventBus.Subscribe(events.ON_REVIEWS_INSERT_END, events.AssertHandler(p.AfterReviewInsert))
-	return p
+	return &PlaceService{ctx, q, eventBus}
 }
 
 func (p *PlaceService) WithTx() (
@@ -128,7 +126,7 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		log.Printf("failed to insert request: %v", err)
 		return
 	}
-	defer func(p *PlaceService) {
+	defer func() {
 		if err != nil {
 			p.q.SetRequestFailed(p.ctx, repository.SetRequestFailedParams{
 				PlaceID: placeId,
@@ -136,7 +134,7 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 				Failed:  true,
 			})
 		}
-	}(p)
+	}()
 	c := googlereviews.NewGoogleReviewsCollector(placeId, nil)
 	scrapeContext, cancelScrape := context.WithCancel(p.ctx)
 	defer cancelScrape()
@@ -153,12 +151,6 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	log.Printf("Scraped place %s", placeId)
 	p.eventBus.Publish(events.ON_PLACE_SCRAPE, place.Place)
 	log.Printf("Inserting place %s", placeId)
-	p, rollback, commit, err := p.WithTx()
-	if err != nil {
-		log.Printf("failed to start transaction: %v", err)
-		return
-	}
-	defer rollback(p.ctx)
 	if err = p.InsertPlace(place); err != nil {
 		log.Printf("failed to insert place: %v", err)
 		return
@@ -168,24 +160,26 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		log.Printf("failed to insert place fields: %v", err)
 		return
 	}
-	if err = p.q.DeleteRequest(p.ctx, repository.DeleteRequestParams{
+	errChan := make(chan error, 1)
+	p.eventBus.Publish(events.ON_REVIEWS_READY, events.OnReviewsReadyParams{
+		ReviewsChan: reviewsChan,
+		ErrChan:     errChan,
+	})
+	if err = <-errChan; err != nil {
+		log.Printf("failed to insert reviews: %v", err)
+		return
+	}
+	if err = p.q.AfterReviewInsert(p.ctx, placeId); err != nil {
+		log.Printf("failed to after review insert: %v", err)
+		return
+	}
+	if err := p.q.DeleteRequest(p.ctx, repository.DeleteRequestParams{
 		PlaceID: placeId,
 		Status:  repository.REQUEST_SCRAPING,
 	}); err != nil {
 		log.Printf("failed to delete request: %v", err)
-		return
 	}
-	if err = commit(p.ctx); err != nil {
-		log.Printf("failed to commit transaction: %v", err)
-		return
-	}
-	errChan := make(chan error, 1)
-	p.eventBus.Publish(events.ON_REVIEWS_READY, events.OnReviewsReadyParams{
-		PlaceId:     placeId,
-		ReviewsChan: reviewsChan,
-		ErrChan:     errChan,
-	})
-	err = <-errChan
+	p.eventBus.Publish(events.ON_REVIEWS_INSERT_END, placeId)
 }
 
 func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
@@ -220,11 +214,4 @@ func (p *PlaceService) RequestPlace(placeId string) (*repository.Place, error) {
 	}
 	go p.ScrapePlace(placeId, place.LastScraped)
 	return placePointer, nil
-}
-
-func (p *PlaceService) AfterReviewInsert(placeId string) {
-	err := p.q.AfterReviewInsert(p.ctx, placeId)
-	if err != nil {
-		log.Printf("failed to update place last scraped: %v", err)
-	}
 }

@@ -10,7 +10,6 @@ const (
 )
 
 type OnReviewsReadyParams struct {
-	PlaceId     string
 	ReviewsChan <-chan []collector.ScrapedReview
 	ErrChan     chan<- error
 }

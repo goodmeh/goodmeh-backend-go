@@ -44,8 +44,7 @@ func (r *ReviewService) GetReviewsImages(reviewIds []string) ([][]string, error)
 		for reviewIds[reviewIdIndex] != row.ReviewID {
 			reviewIdIndex++
 		}
-		err := json.Unmarshal(row.ImageUrls, &images[reviewIdIndex])
-		if err != nil {
+		if err = json.Unmarshal(row.ImageUrls, &images[reviewIdIndex]); err != nil {
 			return nil, err
 		}
 	}
@@ -58,7 +57,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 		if len(acc) == 0 {
 			return err
 		}
-		r, rollback, commit, err := r.WithTx()
+		service, rollback, commit, err := r.WithTx()
 		if err != nil {
 			log.Printf("failed to begin transaction: %v", err)
 			return err
@@ -78,7 +77,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					IsLocalGuide: r.User.IsLocalGuide,
 				}
 			}
-			r.q.InsertUsers(r.ctx, users).Exec(func(i int, e error) {
+			service.q.InsertUsers(r.ctx, users).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
 				}
@@ -103,7 +102,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					PriceRange: r.Review.PriceRange,
 				}
 			}
-			r.q.InsertReviews(r.ctx, reviews).Exec(func(i int, e error) {
+			service.q.InsertReviews(r.ctx, reviews).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
 				}
@@ -127,7 +126,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					CreatedAt: r.Reply.CreatedAt,
 				})
 			}
-			r.q.InsertReviewReplies(r.ctx, reviewReplies).Exec(func(i int, e error) {
+			service.q.InsertReviewReplies(r.ctx, reviewReplies).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
 				}
@@ -149,7 +148,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 					})
 				}
 			}
-			r.q.InsertReviewImages(r.ctx, reviewImages).Exec(func(i int, e error) {
+			service.q.InsertReviewImages(r.ctx, reviewImages).Exec(func(i int, e error) {
 				if e != nil {
 					err = e
 				}
@@ -159,7 +158,7 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 				return err
 			}
 		}
-		err = commit(r.ctx)
+		err = commit(service.ctx)
 		if err != nil {
 			log.Printf("failed to commit transaction: %v", err)
 			return err
@@ -178,19 +177,16 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) {
 				return
 			case reviews, hasMore := <-payload.ReviewsChan:
 				if !hasMore {
-					err := actualInsertion(acc)
-					if err != nil {
+					if err := actualInsertion(acc); err != nil {
 						payload.ErrChan <- err
 						return
 					}
 					log.Printf("Finished inserting %d reviews", count)
-					r.eventBus.Publish(events.ON_REVIEWS_INSERT_END, payload.PlaceId)
 					return
 				}
 				count += uint32(len(reviews))
 				if len(acc)+len(reviews) > MAX_BATCH_SIZE {
-					err := actualInsertion(acc)
-					if err != nil {
+					if err := actualInsertion(acc); err != nil {
 						payload.ErrChan <- err
 						return
 					}
