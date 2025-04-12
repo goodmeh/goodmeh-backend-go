@@ -23,8 +23,7 @@ const (
 )
 
 type SummariesSchema struct {
-	Summary         string `json:"summary"`
-	BusinessSummary string `json:"business_summary"`
+	Summary string `json:"summary"`
 }
 
 type IndividualSummaryInput struct {
@@ -115,7 +114,7 @@ func (s OpenAiSummariser) summarise(combinedReviews string) (string, error) {
 	chatCompletion, err := s.client.Chat.Completions.New(context.TODO(), openai.ChatCompletionNewParams{
 		Model: openai.ChatModelGPT4oMini,
 		Messages: []openai.ChatCompletionMessageParamUnion{
-			openai.SystemMessage("The data you will be given to work with are a collection of individual reviews of a place on Google maps as submitted by users. The goal is to generate two summaries with a different purpose for a different audience, based on the same set of review data. The first summary is intended for potential customers. The second summary is intended for business owners or managers. Use the following steps in order to generate the two summaries with the highest quality and accuracy. Step 1 - Read in all of the data provided to establish a context and understanding. If there are many reviews, identify key details and important  information that should be reflected in the summary. If there are few reviews, do not generate information or detail where there is none, if there is insufficient data to provide a good summary, you can respond with a statement to state that. Step 2 - Adopt the persona of a connoisseur and professional critic. This summary should let customers understand the essence of the place with the main aim of aiding them in deciding if they would enjoy it or not. Step 3 - Adopt the persona of a consultant and advisor. This summary should help business owners or managers understand what they are doing well by highlighting what customers are delighted by. Also help them improve their operations by surfacing any blindspots by including customer feedback if any. Keep the summaries to a maximum of 6 sentences each. You can use markdown bold and italic formatting to highlight key points."),
+			openai.SystemMessage("The data you will be given to work with are a collection of individual reviews of a place on Google maps as submitted by users. The goal is to generate a summary intended for potential customers to read. Use the following steps in order to generate the summary with the highest quality and accuracy. Step 1 - Read in all of the data provided to establish a context and understanding. If there are many reviews, identify key details and important  information that should be reflected in the summary. If there are few reviews, do not generate information or detail where there is none, if there is insufficient data to provide a good summary, you can respond with a statement to state that. Step 2 - Adopt the persona of a connoisseur and professional critic. This summary should let customers understand the essence of the place with the main aim of aiding them in deciding if they would enjoy it or not. Keep the summary to a maximum of 6 sentences each. You can use markdown bold and italic formatting to highlight key points."),
 			openai.UserMessage(combinedReviews),
 		},
 		ResponseFormat: SUMMARY_RESPONSE_FORMAT,
@@ -175,7 +174,7 @@ func (s OpenAiSummariser) SummariseIndividualReviews(reviews []IndividualSummary
 	for _, review := range reviews {
 		body := openai.ChatCompletionNewParams{
 			Messages: []openai.ChatCompletionMessageParamUnion{
-				openai.SystemMessage("The data provided is an individual review of a place on Google maps as submitted by a user. The objective is to summarise the review. This is done twice with a different persona and objective each time. One version is intended for potential customers. The other version is intended for business managers. Use the following steps in order to generate the two summaries. Keep the summaries to a maximum of 3 sentences each. Step 1 - Process the review data provided to establish a context and understanding. Identify key details and important information that should be reflected in the summary. Step 2 - Adopt the persona and voice of the user. The summary should look and sound like it was from the original user. Adopt their language and writing style, but focus on distilling and improving the clarity and quality of the text. Step 3 - Adopt the persona of a business analyst looking at customer feedback to extract insights. Pay attention to what the user was pleased or pained by. Adopt an objective and neutral writing style and tone. Focus on extracting valuable insight from the review data."),
+				openai.SystemMessage("The data provided is an individual review of a place on Google maps as submitted by a user. The objective is to summarise the review intended for potential customers to read. Use the following steps in order to generate the summary: Keep the summary to a maximum of 3 sentences each. Step 1 - Process the review data provided to establish a context and understanding. Identify key details and important information that should be reflected in the summary. Step 2 - Adopt the persona and voice of the user. The summary should look and sound like it was from the original user. Adopt their language and writing style, but focus on distilling and improving the clarity and quality of the text. Focus on extracting valuable insight from the review data."),
 				openai.UserMessage(review.Text),
 			},
 			Model:          openai.ChatModelGPT4oMini,
