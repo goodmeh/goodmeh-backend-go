@@ -46,8 +46,8 @@ CREATE TABLE "user" (
 	photo_count INTEGER DEFAULT 0 NOT NULL,
 	rating_count INTEGER DEFAULT 0 NOT NULL,
 	is_local_guide BOOLEAN DEFAULT (FALSE) NOT NULL,
-	score INTEGER DEFAULT 0 NOT NULL,
-	long_review_count INTEGER DEFAULT 0 NOT NULL
+	long_review_count INTEGER DEFAULT 0 NOT NULL,
+	score INTEGER GENERATED ALWAYS AS (review_count * 10 + long_review_count * 10 + photo_count * 5 + rating_count) STORED
 );
 CREATE TABLE review (
 	id VARCHAR(255) PRIMARY KEY,
