@@ -248,6 +248,12 @@ func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
 			failed = true
 			log.Printf("failed to update place summary: %v", err)
 		}
+		if err := r.q.DeleteRequest(r.ctx, repository.DeleteRequestParams{
+			PlaceID: placeId,
+			Status:  repository.REQUEST_SCRAPING,
+		}); err != nil {
+			log.Printf("failed to delete request: %v", err)
+		}
 	}()
 	return nil
 }
