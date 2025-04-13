@@ -46,9 +46,29 @@ SET text = EXCLUDED.text,
 -- name: InsertReviewImages :batchexec
 INSERT INTO review_image (review_id, image_url)
 VALUES ($1, $2) ON CONFLICT (review_id, image_url) DO NOTHING;
--- name: GetReviewsWithEnoughText :many
+-- name: GetRandomReviewsWithEnoughText :many
 SELECT text
 FROM review
 WHERE place_id = $1
     AND text != ''
-    AND LENGTH(text) > 50;
+    AND LENGTH(text) > 50
+ORDER BY RANDOM()
+LIMIT $2;
+-- name: GetRecentReviewsWithEnoughText :many
+SELECT text
+FROM review
+WHERE place_id = $1
+    AND text != ''
+    AND LENGTH(text) > 50
+ORDER BY --
+	-- Using exponential decay function: weight = e^(-decay * t)
+    -- decay can be adjusted to control how quickly probability decreases
+    -- larger decay, weight decreases faster, more biased towards recent reviews
+    -- recommended decay is 0.0038=ln(2)/182, which means weight will be approximately halved every 182 days(half a year)
+    random() * exp(
+        - sqlc.arg (decay)::FLOAT * EXTRACT(
+            DAY
+            FROM now() - created_at
+        )
+    ) DESC
+LIMIT $2;

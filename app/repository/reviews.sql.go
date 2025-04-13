@@ -76,6 +76,87 @@ func (q *Queries) GetPlaceReviews(ctx context.Context, arg GetPlaceReviewsParams
 	return items, nil
 }
 
+const getRandomReviewsWithEnoughText = `-- name: GetRandomReviewsWithEnoughText :many
+SELECT text
+FROM review
+WHERE place_id = $1
+    AND text != ''
+    AND LENGTH(text) > 50
+ORDER BY RANDOM()
+LIMIT $2
+`
+
+type GetRandomReviewsWithEnoughTextParams struct {
+	PlaceID string `json:"place_id"`
+	Limit   int32  `json:"limit"`
+}
+
+func (q *Queries) GetRandomReviewsWithEnoughText(ctx context.Context, arg GetRandomReviewsWithEnoughTextParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getRandomReviewsWithEnoughText, arg.PlaceID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			return nil, err
+		}
+		items = append(items, text)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecentReviewsWithEnoughText = `-- name: GetRecentReviewsWithEnoughText :many
+SELECT text
+FROM review
+WHERE place_id = $1
+    AND text != ''
+    AND LENGTH(text) > 50
+ORDER BY --
+	-- Using exponential decay function: weight = e^(-decay * t)
+    -- decay can be adjusted to control how quickly probability decreases
+    -- larger decay, weight decreases faster, more biased towards recent reviews
+    -- recommended decay is 0.0038=ln(2)/182, which means weight will be approximately halved every 182 days(half a year)
+    random() * exp(
+        - $3::FLOAT * EXTRACT(
+            DAY
+            FROM now() - created_at
+        )
+    ) DESC
+LIMIT $2
+`
+
+type GetRecentReviewsWithEnoughTextParams struct {
+	PlaceID string  `json:"place_id"`
+	Limit   int32   `json:"limit"`
+	Decay   float64 `json:"decay"`
+}
+
+func (q *Queries) GetRecentReviewsWithEnoughText(ctx context.Context, arg GetRecentReviewsWithEnoughTextParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getRecentReviewsWithEnoughText, arg.PlaceID, arg.Limit, arg.Decay)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var text string
+		if err := rows.Scan(&text); err != nil {
+			return nil, err
+		}
+		items = append(items, text)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReviewImageUrls = `-- name: GetReviewImageUrls :many
 SELECT review_image.review_id,
     JSON_AGG(review_image.image_url) AS image_urls
@@ -103,34 +184,6 @@ func (q *Queries) GetReviewImageUrls(ctx context.Context, reviewIds []string) ([
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getReviewsWithEnoughText = `-- name: GetReviewsWithEnoughText :many
-SELECT text
-FROM review
-WHERE place_id = $1
-    AND text != ''
-    AND LENGTH(text) > 50
-`
-
-func (q *Queries) GetReviewsWithEnoughText(ctx context.Context, placeID string) ([]string, error) {
-	rows, err := q.db.Query(ctx, getReviewsWithEnoughText, placeID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var text string
-		if err := rows.Scan(&text); err != nil {
-			return nil, err
-		}
-		items = append(items, text)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

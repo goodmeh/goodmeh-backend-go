@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"goodmeh/app/events"
 	"goodmeh/app/repository"
+	"goodmeh/app/summariser"
 	"log"
+	"math"
 	"slices"
 
 	"github.com/goodmeh/backend-private/collector"
@@ -200,8 +202,65 @@ func (r *ReviewService) InsertReviews(payload events.OnReviewsReadyParams) error
 	return nil
 }
 
+func (r *ReviewService) SummariseReviewsInBg(placeId string) error {
+	go func() {
+		failed := false
+		log.Printf("Summarising reviews for place %s", placeId)
+		err := r.q.InsertRequestOrSetFailedFalse(r.ctx, repository.InsertRequestOrSetFailedFalseParams{
+			PlaceID: placeId,
+			Status:  repository.REQUEST_SUMMARISING,
+		})
+		if err != nil {
+			failed = true
+			log.Printf("failed to insert request: %v", err)
+			return
+		}
+		defer func() {
+			if failed {
+				r.q.SetRequestFailed(r.ctx, repository.SetRequestFailedParams{
+					PlaceID: placeId,
+					Status:  repository.REQUEST_SUMMARISING,
+					Failed:  true,
+				})
+			}
+		}()
+		summariser := summariser.NewOpenAiSummariser()
+		reviews, err := r.q.GetRecentReviewsWithEnoughText(r.ctx, repository.GetRecentReviewsWithEnoughTextParams{
+			PlaceID: placeId,
+			Limit:   2000,
+			Decay:   math.Log2(182),
+		})
+		if err != nil {
+			failed = true
+			log.Printf("failed to get reviews: %v", err)
+			return
+		}
+		summary, err := summariser.SummariseReviews(reviews)
+		if err != nil {
+			failed = true
+			log.Printf("failed to summarise reviews: %v", err)
+			return
+		}
+		if err = r.q.UpdatePlaceSummary(r.ctx, repository.UpdatePlaceSummaryParams{
+			ID:      placeId,
+			Summary: &summary.Summary,
+		}); err != nil {
+			failed = true
+			log.Printf("failed to update place summary: %v", err)
+		}
+		if err := r.q.DeleteRequest(r.ctx, repository.DeleteRequestParams{
+			PlaceID: placeId,
+			Status:  repository.REQUEST_SCRAPING,
+		}); err != nil {
+			log.Printf("failed to delete request: %v", err)
+		}
+	}()
+	return nil
+}
+
 func NewReviewService(ctx context.Context, q *repository.Queries, eventBus *events.EventBus) *ReviewService {
 	r := &ReviewService{ctx, q, eventBus}
 	r.eventBus.Subscribe(events.ON_REVIEWS_READY, events.AssertHandler(r.InsertReviews))
+	r.eventBus.Subscribe(events.ON_REVIEWS_INSERT_END, events.AssertHandler(r.SummariseReviewsInBg))
 	return r
 }
