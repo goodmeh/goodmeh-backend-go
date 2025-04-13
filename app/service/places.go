@@ -126,8 +126,9 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		log.Printf("failed to insert request: %v", err)
 		return
 	}
+	failed := false
 	defer func() {
-		if err != nil {
+		if failed {
 			p.q.SetRequestFailed(p.ctx, repository.SetRequestFailedParams{
 				PlaceID: placeId,
 				Status:  repository.REQUEST_SCRAPING,
@@ -152,11 +153,13 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 	p.eventBus.Publish(events.ON_PLACE_SCRAPE, place.Place)
 	log.Printf("Inserting place %s", placeId)
 	if err = p.InsertPlace(place); err != nil {
+		failed = true
 		log.Printf("failed to insert place: %v", err)
 		return
 	}
 	log.Printf("Inserting place fields %s", placeId)
 	if err = p.InsertPlaceFields(place); err != nil {
+		failed = true
 		log.Printf("failed to insert place fields: %v", err)
 		return
 	}
@@ -166,10 +169,12 @@ func (p *PlaceService) ScrapePlace(placeId string, laterThan *time.Time) {
 		ErrChan:     errChan,
 	})
 	if err = <-errChan; err != nil {
+		failed = true
 		log.Printf("failed to insert reviews: %v", err)
 		return
 	}
 	if err = p.q.AfterReviewInsert(p.ctx, placeId); err != nil {
+		failed = true
 		log.Printf("failed to after review insert: %v", err)
 		return
 	}
